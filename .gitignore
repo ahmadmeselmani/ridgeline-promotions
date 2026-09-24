@@ -1,0 +1,18 @@
+node_modules
+.env
+.env.local
+coverage
+.turbo
+.next/
+out/
+build
+dist
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+apps/promo-hub/src/database/generated/
+*.db
+*.db-journal
+
+# Assessment materials: kept local, never committed
+.task/

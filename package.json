@@ -1,0 +1,31 @@
+{
+  "name": "ridgeline-promotions",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "check-types": "turbo run check-types",
+    "format": "prettier --write \"{apps,packages}/**/*.{ts,tsx,md}\"",
+    "format:check": "prettier --check \"{apps,packages}/**/*.{ts,tsx,md}\"",
+    "clean": "rm -rf node_modules .turbo apps/*/node_modules apps/*/.turbo apps/*/.next apps/*/dist packages/*/node_modules packages/*/.turbo packages/*/dist apps/promo-hub/src/database/generated",
+    "test:e2e": "pnpm --filter promo-hub test:e2e",
+    "generate": "pnpm --filter promo-hub db:generate",
+    "db:migrate:dev": "pnpm --filter promo-hub db:migrate:dev",
+    "db:migrate:deploy": "pnpm --filter promo-hub db:migrate:deploy",
+    "db:reset": "pnpm --filter promo-hub db:reset",
+    "db:seed": "pnpm --filter promo-hub db:seed",
+    "db:studio": "pnpm --filter promo-hub db:studio",
+    "bootstrap": "node -e \"const f=require('fs');for(const a of ['promo-hub','promo-web']){const e='apps/'+a+'/.env';if(!f.existsSync(e))f.copyFileSync(e+'.example',e)}\" && pnpm install && turbo run build --filter=promo-hub^... && pnpm db:migrate:deploy && pnpm db:seed"
+  },
+  "devDependencies": {
+    "prettier": "catalog:",
+    "turbo": "^2.10.11",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

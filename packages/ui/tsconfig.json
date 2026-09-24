@@ -1,0 +1,14 @@
+{
+  "extends": "@ridgeline/typescript-config/react-library.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "strictNullChecks": true,
+    "paths": {
+      "@ridgeline/ui": ["./src"],
+      "@ridgeline/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

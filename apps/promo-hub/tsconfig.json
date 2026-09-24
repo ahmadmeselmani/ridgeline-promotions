@@ -1,0 +1,12 @@
+{
+  "extends": "@ridgeline/typescript-config/nestjs.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "resolvePackageJsonExports": true,
+    "removeComments": true,
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node", "jest"]
+  }
+}

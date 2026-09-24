@@ -1,0 +1,32 @@
+{
+  "name": "@ridgeline/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./common": { "types": "./dist/common/index.d.ts", "default": "./dist/common/index.js" },
+    "./venues": { "types": "./dist/venues/index.d.ts", "default": "./dist/venues/index.js" },
+    "./products": { "types": "./dist/products/index.d.ts", "default": "./dist/products/index.js" },
+    "./members": { "types": "./dist/members/index.d.ts", "default": "./dist/members/index.js" },
+    "./staff": { "types": "./dist/staff/index.d.ts", "default": "./dist/staff/index.js" },
+    "./promotions": { "types": "./dist/promotions/index.d.ts", "default": "./dist/promotions/index.js" },
+    "./rulebooks": { "types": "./dist/rulebooks/index.d.ts", "default": "./dist/rulebooks/index.js" },
+    "./pricing": { "types": "./dist/pricing/index.d.ts", "default": "./dist/pricing/index.js" },
+    "./scenarios": { "types": "./dist/scenarios/index.d.ts", "default": "./dist/scenarios/index.js" },
+    "./overrides": { "types": "./dist/overrides/index.d.ts", "default": "./dist/overrides/index.js" }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@ridgeline/eslint-config": "workspace:*",
+    "@ridgeline/typescript-config": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

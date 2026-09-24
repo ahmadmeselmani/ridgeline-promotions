@@ -1,0 +1,14 @@
+{
+  "extends": "@ridgeline/typescript-config/nestjs.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "rootDir": "src",
+    "declaration": true,
+    "removeComments": true,
+    "strictNullChecks": true,
+    "resolvePackageJsonExports": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

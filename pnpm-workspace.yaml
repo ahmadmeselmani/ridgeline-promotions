@@ -1,0 +1,89 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  '@parcel/watcher': true
+  "@prisma/engines": true
+  better-sqlite3: true
+  prisma: true
+  '@swc/core': true
+  "@scarf/scarf": false
+  core-js: true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+catalog:
+  # Language
+  typescript: 5.9.2
+
+  # Linting
+  eslint: ^9.39.1
+  "@eslint/js": ^9.39.1
+  eslint-config-prettier: ^10.1.1
+  typescript-eslint: ^8.50.0
+  globals: ^16.5.0
+
+  # Formatting
+  prettier: ^3.7.4
+
+  # Validation
+  zod: ^4.4.3
+
+  # Utils
+  tsx: ^4.23.12
+
+  # Database — pinned to the exact Prisma version installed in the qbase reference
+  prisma: 7.9.1
+  "@prisma/client": 7.9.1
+  "@prisma/adapter-better-sqlite3": 7.9.1
+
+  # Frontend framework
+  react: ^19.2.0
+  react-dom: ^19.2.0
+  next: 16.3.0
+
+  # Data fetching
+  "@tanstack/react-query": ^5.102.8
+
+  # Styling
+  tailwindcss: ^4.3.3
+  "@tailwindcss/postcss": ^4.3.3
+  tw-animate-css: ^1.4.0
+  shadcn: ^4.19.1
+  class-variance-authority: ^0.7.1
+  radix-ui: ^1.6.7
+  sonner: ^2.0.8
+  lucide-react: ^1.38.0
+  clsx: ^2.1.1
+  tailwind-merge: ^3.6.0
+  next-themes: ^0.4.6
+
+  # Type definitions
+  "@types/node": ^22.15.3
+  "@types/react": 19.2.2
+  "@types/react-dom": 19.2.2
+
+  # Backend framework (NestJS) - shared by apps/promo-hub and packages/nest-common
+  "@nestjs/common": ^11.0.1
+  "@nestjs/core": ^11.0.1
+  "@nestjs/platform-express": ^11.0.1
+  "@nestjs/swagger": ^11.4.7
+  "@nestjs/testing": ^11.0.1
+
+  # Runtime helpers
+  reflect-metadata: ^0.2.2
+  rxjs: ^7.8.1
+  dotenv: ^17.4.2
+
+  # Testing
+  jest: ^30.0.0
+  ts-jest: ^29.2.5
+  supertest: ^7.0.0
+  "@types/jest": ^30.0.0
+  "@types/supertest": ^7.0.0
+
+  # Backend types
+  "@types/express": ^5.0.0
+minimumReleaseAgeExclude:
+  - shadcn@4.19.1
+  - lucide-react@1.38.0

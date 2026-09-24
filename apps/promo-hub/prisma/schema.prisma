@@ -1,0 +1,91 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/database/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Only what this service owns lives here. Venues, products, members, staff and
+// the legacy promotion config belong to Trestle and are read from its API
+// (stubbed from fixtures), never copied into this database.
+
+/// "legacy" is never stored: it's Trestle's own config, derived on read.
+enum StoredRulebookName {
+  live
+  draft
+}
+
+enum ResolutionPolicy {
+  best_price
+  priority
+}
+
+enum PromotionType {
+  percent_off
+  fixed_price
+  bundle_price
+}
+
+enum Audience {
+  everyone
+  member
+  staff
+}
+
+enum OverrideReason {
+  customer_complaint
+  wastage_or_error
+  manager_goodwill
+  deal_not_in_system
+  other
+}
+
+model Rulebook {
+  name       StoredRulebookName @id
+  resolution ResolutionPolicy
+  updatedAt  DateTime           @updatedAt
+  promotions Promotion[]
+}
+
+/// A promotion inside one rulebook. The same promotionId exists in both live
+/// and draft; publishing copies draft rows over live rows.
+model Promotion {
+  rulebookName StoredRulebookName
+  promotionId  String
+  // Keeps the order Tania sees stable across saves.
+  position     Int
+  name         String
+  description  String
+  type         PromotionType
+  value        Int
+  audience     Audience
+  priority     Int
+  active       Boolean
+  // Shapes validated by @ridgeline/contracts on every read and write.
+  appliesTo      Json
+  schedule       Json
+  venueIds       Json?
+  venueOverrides Json
+  stacksWith     Json
+
+  rulebook Rulebook @relation(fields: [rulebookName], references: [name], onDelete: Cascade)
+
+  @@id([rulebookName, promotionId])
+}
+
+model PriceOverride {
+  seq          Int            @id @default(autoincrement())
+  venueId      String
+  staffId      String
+  productId    String
+  quotedCents  Int
+  chargedCents Int
+  reason       OverrideReason
+  note         String
+  createdAt    DateTime       @default(now())
+
+  @@index([venueId])
+}
