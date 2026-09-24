@@ -64,7 +64,7 @@ describe("RulebooksService — deal status", () => {
     expect(statuses(await rulebooks.draftStatus())["PRM-22"]).toBe("turned_off");
   });
 
-  it("previews who a turned-off deal affects before it reaches the tills", async () => {
+  it("previews who a turned-off deal affects before it reaches New rules", async () => {
     await promotions.update("PRM-22", { active: false });
 
     const impact = await pricing.impact({ from: "live", to: "draft" });
@@ -162,8 +162,58 @@ describe("PromotionsService.restore — undo for one deal", () => {
     const restored = await promotions.restore("PRM-22");
 
     expect(restored.stacksWith).toEqual([]);
-    // Not identical to the tills' version, so it still needs publishing.
+    // Not identical to the published New rules, so it still needs publishing.
     expect(await statusOf("PRM-22")).toBe("changed");
+  });
+
+  it("restores published deals that stacked on a removed deal", async () => {
+    await promotions.update("PRM-22", { stacksWith: ["PRM-23"] });
+    await rulebooks.publish();
+
+    await promotions.remove("PRM-23");
+    expect((await promotions.findOne("draft", "PRM-22")).stacksWith).toEqual(["PRM-23"]);
+
+    await promotions.restore("PRM-23");
+
+    expect((await promotions.findOne("draft", "PRM-22")).stacksWith).toEqual(["PRM-23"]);
+    expect(await statusOf("PRM-22")).toBe("published");
+    expect(await statusOf("PRM-23")).toBe("published");
+  });
+
+  it("doesn't restore an incoming stacking link that was separately edited", async () => {
+    await promotions.update("PRM-22", { stacksWith: ["PRM-23"] });
+    await rulebooks.publish();
+
+    await promotions.update("PRM-22", { stacksWith: [] });
+    await promotions.remove("PRM-23");
+    await promotions.restore("PRM-23");
+
+    expect((await promotions.findOne("draft", "PRM-22")).stacksWith).toEqual([]);
+    expect(await statusOf("PRM-22")).toBe("changed");
+    expect(await statusOf("PRM-23")).toBe("published");
+  });
+
+  it("allows unrelated edits while a preserved stacking target is deleted", async () => {
+    await promotions.update("PRM-22", { stacksWith: ["PRM-23"] });
+    await rulebooks.publish();
+
+    await promotions.remove("PRM-23");
+    const updated = await promotions.update("PRM-22", { description: "Updated copy" });
+
+    expect(updated.description).toBe("Updated copy");
+    expect(updated.stacksWith).toEqual(["PRM-23"]);
+  });
+
+  it("removes dangling stacking links when a deletion is published", async () => {
+    await promotions.update("PRM-22", { stacksWith: ["PRM-23"] });
+    await rulebooks.publish();
+
+    await promotions.remove("PRM-23");
+    await rulebooks.publish();
+
+    expect((await promotions.findOne("live", "PRM-22")).stacksWith).toEqual([]);
+    expect((await promotions.findOne("draft", "PRM-22")).stacksWith).toEqual([]);
+    expect((await rulebooks.findAll()).find((item) => item.name === "draft")?.hasUnpublishedChanges).toBe(false);
   });
 
   it("refuses to restore a deal that was never published", async () => {

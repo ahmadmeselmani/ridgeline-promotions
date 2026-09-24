@@ -29,7 +29,7 @@ export const UpdatePolicySchema = PricingPolicySchema;
 
 export type UpdatePolicyInput = z.infer<typeof UpdatePolicySchema>;
 
-// Where each deal in the draft stands against what the tills run (live).
+// Where each deal in the draft stands against the published New rules (live).
 // Worked out on every read by comparing draft with live, never stored.
 //   published   the tills run exactly this version
 //   changed     published, but the draft has edits the tills don't have yet

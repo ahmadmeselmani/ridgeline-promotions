@@ -27,8 +27,8 @@ export function PromotionsTable({
   products: ProductResponse[];
   venues: VenueResponse[];
   onEdit: (promotion: Promotion) => void;
-  // Draft only: each deal's status against the tills, and deals deleted from
-  // the draft that the tills still run.
+  // Draft only: each deal's status against the published New rules, plus deals
+  // deleted from the draft that remain in New rules.
   statuses?: ReadonlyMap<string, DealStatus>;
   removed?: Promotion[];
 }) {
@@ -36,7 +36,7 @@ export function PromotionsTable({
   const restore = useRestorePromotion();
   const undo = (promotion: Promotion) =>
     restore.mutate(promotion.promotionId, {
-      onSuccess: () => toast(`${promotion.name} is back to what the tills run`),
+      onSuccess: () => toast(`${promotion.name} is back to the published New rules`),
       onError: (error) => toast.error(error.message),
     });
   const productName = (id: string) => products.find((product) => product.productId === id)?.name ?? id;

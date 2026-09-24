@@ -129,7 +129,7 @@ export function PromotionEditor({
       <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
         <SheetHeader>
           <SheetTitle>{promotionId ? `Edit ${initial.name}` : "New promotion"}</SheetTitle>
-          <SheetDescription>Changes go into your draft. Nothing reaches the tills until you publish.</SheetDescription>
+          <SheetDescription>Changes go into your draft. New rules change only when you publish.</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-4">

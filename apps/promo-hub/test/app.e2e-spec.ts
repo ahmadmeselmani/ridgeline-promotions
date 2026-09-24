@@ -50,6 +50,21 @@ describe("Promo hub (e2e)", () => {
       .expect(400);
   });
 
+  it.each(["2026-09-23T99:99", "2026-02-30T16:30"])(
+    "rejects the invalid venue-local time %s",
+    async (localDateTime) => {
+      await request(server())
+        .post("/pricing/quote")
+        .send({
+          venueId: "VEN-0233",
+          localDateTime,
+          customer: { kind: "guest" },
+          lines: [{ productId: "PRD-0101", quantity: 1 }],
+        })
+        .expect(400);
+    },
+  );
+
   // The editor shows `message` as the error toast, so it must say what's wrong.
   it("PATCH /promotions/:id validates the merged promotion with a readable message", async () => {
     const response = await request(server())
@@ -70,6 +85,36 @@ describe("Promo hub (e2e)", () => {
 
     const body = response.body as { message: string };
     expect(body.message).toMatch(/^schedule\.days: /);
+  });
+
+  it("rejects impossible promotion schedules", async () => {
+    const startsAt = await request(server())
+      .patch("/promotions/PRM-21")
+      .send({
+        schedule: {
+          days: ["mon"],
+          startsAt: "24:00",
+          endsAt: "01:00",
+          validFrom: null,
+          validTo: null,
+        },
+      })
+      .expect(400);
+    expect((startsAt.body as { message: string }).message).toMatch(/^schedule\.startsAt: /);
+
+    const dates = await request(server())
+      .patch("/promotions/PRM-21")
+      .send({
+        schedule: {
+          days: ["mon"],
+          startsAt: "16:00",
+          endsAt: "18:00",
+          validFrom: "2026-12-31",
+          validTo: "2026-01-01",
+        },
+      })
+      .expect(400);
+    expect((dates.body as { message: string }).message).toMatch(/^schedule\.validTo: /);
   });
 
   it("GET /rulebooks/draft/status and POST /promotions/:id/restore work over HTTP", async () => {

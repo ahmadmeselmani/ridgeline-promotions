@@ -113,7 +113,7 @@ describe("PricingService", () => {
     expect(impact.changed.map((item) => item.scenarioId)).toEqual(["bistro-630pm"]);
     expect(impact.changed[0]?.deltaCents).toBe(-180);
 
-    // Nothing reaches the tills until it's published.
+    // The published New rules do not change until the draft is published.
     const summaries = await rulebooks.findAll();
     expect(summaries.find((r) => r.name === "draft")?.hasUnpublishedChanges).toBe(true);
     await rulebooks.publish();

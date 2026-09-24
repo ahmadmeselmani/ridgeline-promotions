@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type { Promotion } from "@ridgeline/contracts/promotions";
+import { STACKS_WITH_ANY } from "@ridgeline/contracts/promotions";
 import type {
   DealStatus,
   DraftStatusResponse,
@@ -52,8 +53,8 @@ export class RulebooksService {
     });
   }
 
-  // Compares each draft deal with its live version, so Tania can see which
-  // deals the tills already run and which are waiting to be published.
+  // Compares each draft deal with the published New rules, so Tania can see
+  // which changes are still waiting to be published.
   async draftStatus(): Promise<DraftStatusResponse> {
     const [draft, live] = await Promise.all([
       this.rulebooksClient.findUnique("draft"),
@@ -84,7 +85,19 @@ export class RulebooksService {
       throw new BadRequestException("Nothing to publish — your draft matches the new rules");
     }
     const draft = await this.rulebooksClient.findUnique("draft");
-    return this.rulebooksClient.save({ ...draft, name: "live" });
+    const promotionIds = new Set(draft.promotions.map((promotion) => promotion.promotionId));
+    return this.rulebooksClient.publish({
+      policy: draft.policy,
+      // Draft deletions temporarily keep incoming links so per-deal Undo can
+      // restore behaviour without overwriting separate edits. Once published,
+      // references to deals that remain deleted must not enter New rules.
+      promotions: draft.promotions.map((promotion) => ({
+        ...promotion,
+        stacksWith: promotion.stacksWith.filter(
+          (id) => id === STACKS_WITH_ANY || promotionIds.has(id),
+        ),
+      })),
+    });
   }
 
   async discardDraft(): Promise<RulebookResponse> {

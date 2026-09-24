@@ -55,7 +55,7 @@ packages/
 |---|---|
 | **Start here** | What's wrong today, a four-step walkthrough, and which customers' prices change (today's till vs the new rules) |
 | **Price an order** | "What will the till charge for *this* order, and why?" A one-sentence answer, then one receipt per set of rules |
-| **Manage deals** | Tania edits deals in her **draft** (change → check who's affected → publish). No ticket. Each deal shows whether the tills already run it (Published / Changed / New / Turned off / Removed), with Undo per deal |
+| **Manage deals** | Tania edits deals in her **draft** (change → check who's affected → publish). No ticket. Each deal shows its status against the published New rules (Published / Changed / New / Turned off / Removed), with Undo per deal |
 | **Week at a glance** | One venue, one week: where deals overlap, and how many hours someone can get two discounts at once |
 | **Manual prices** | Overrides need `override_price` and a reason, and are reported separately from promotions |
 
@@ -63,7 +63,7 @@ The UI uses one vocabulary throughout: **Today's till** (Trestle's current setup
 
 ### Three rulebooks
 - **legacy**: Trestle's config imported *unchanged* (priority wins, member stacks on everything, `23:59` gap kept). This proves we can reproduce today's till: Ray = $16.20.
-- **live**: what the tills use once published.
+- **live**: the prototype's published New rules. There is no real till connection.
 - **draft**: work in progress. Publishing copies it to live, and discarding resets it.
 
 ## Decisions

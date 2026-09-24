@@ -38,7 +38,7 @@ export class RulebooksController {
   }
 
   @ApiEndpoint({
-    summary: "Each draft deal's status against what the tills run: published, changed, new, turned off or removed",
+    summary: "Each draft deal's status against the published prototype rules",
     responses: [apiResponse.ok(DraftStatusResponseSchema)],
   })
   @Get(RULEBOOKS_PATHS.DRAFT_STATUS)
@@ -59,7 +59,7 @@ export class RulebooksController {
   }
 
   @ApiEndpoint({
-    summary: "Publish the draft so tills price with it",
+    summary: "Publish the draft as the prototype's New rules",
     responses: [apiResponse.created(RulebookResponseSchema), apiResponse.badRequest()],
   })
   @Post(RULEBOOKS_PATHS.DRAFT_PUBLISH)

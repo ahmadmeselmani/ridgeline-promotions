@@ -23,11 +23,11 @@ export const RULEBOOK_LABEL: Record<RulebookName, string> = {
 
 export const RULEBOOK_HINT: Record<RulebookName, string> = {
   legacy: "How Trestle prices it right now",
-  live: "What tills charge once published",
+  live: "Published prototype rules; not connected to live tills",
   draft: "Your unpublished changes",
 };
 
-// Where a deal in your draft stands against what the tills run.
+// Where a deal in your draft stands against the published New rules.
 export const DEAL_STATUS_LABEL: Record<DealStatus, string> = {
   published: "Published",
   changed: "Changed, not published",

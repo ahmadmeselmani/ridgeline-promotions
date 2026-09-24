@@ -78,10 +78,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Moon className="dark:hidden" />
           </Button>
         </div>
+        <div className="border-t bg-primary/8">
+          <div className="mx-auto max-w-7xl px-4 py-1.5 text-center text-xs text-muted-foreground">
+            Prototype only — not connected to live tills. Publishing updates the prototype&apos;s New rules.
+          </div>
+        </div>
         {draftDirty && !onDealsPage ? (
           <div className="border-t bg-warning/15">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5 text-sm">
-              <span>You have changes that aren&apos;t on the tills yet.</span>
+              <span>You have changes that aren&apos;t in New rules yet.</span>
               <Link href={APP_PATHS.RULEBOOK} className="flex items-center gap-1 font-medium underline-offset-4 hover:underline">
                 Review and publish <ArrowRight className="size-3.5" />
               </Link>

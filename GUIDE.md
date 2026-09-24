@@ -64,7 +64,7 @@ To stop it, press `Ctrl + C` in the terminal.
 make check
 ```
 
-This builds everything and runs all 66 automatic tests. It should end with no errors.
+This builds everything and runs all 73 automatic tests. It should end with no errors.
 
 ### If something goes wrong
 
@@ -108,7 +108,7 @@ When a customer qualifies for more than one, **nobody knows what the till will c
 | Word in the app  | Meaning                                                               |
 | ---------------- | --------------------------------------------------------------------- |
 | **Today's till** | How the till prices things right now                                  |
-| **New rules**    | How it will price once published                                      |
+| **New rules**    | Published rules in this prototype; real till integration comes later  |
 | **Your draft**   | Changes you're working on. Customers don't see them until you publish |
 
 ---
@@ -127,10 +127,10 @@ Use cases 1–7 are the demo. Use cases 8–11 check the fixes made after the co
 
 1. Click **Price an order** in the menu.
 2. Click the **Ray's Tuesday schnitzel** button (it's selected when the page opens).
-3. Read the green box at the top. It says the order costs **$18.00** under the new rules, **$5.40 less** than today's till ($23.40).
+3. Read the red box at the top. It says the order costs **$18.00** under the new rules, **$1.80 more** than today's till ($16.20).
 4. Compare the two receipts:
    - **Today's till:** the schnitzel gets Schnitzel Tuesday, **plus** Member Discount _(extra, on top)_. That's the double discount.
-   - **New rules:** one deal only. Under **Not applied**, it says why the member discount wasn't added: _"Part of Schnitzel Tuesday — cheaper as a bundle."_
+   - **New rules:** one deal only. The member discount is not added. This exact supplied-data case has no pot because Trestle supplied no pot product; use case 8 separately demonstrates the assumed schnitzel-and-pot bundle.
 
 **Point to make:** the till now explains itself, so staff don't need to guess or override.
 
@@ -152,7 +152,7 @@ Try this: pick **Staff Parma & Pint on Thursday**. Today the staff member pays *
 4. Choose **The Gilded Spoon**, keep **Runs here** switched on, and set the times to **17:00** to **19:00**.
 5. Click **Save to draft**.
 6. Look at **Who's affected by your changes**. It shows one line: _"Bistro pint at 6:30pm: $12.00 → $10.20"_. Nothing else changed.
-7. Happy with it? Click **Publish to tills** in the bar at the bottom. Changed your mind? Click **Undo my changes**.
+7. Happy with it? Click **Publish new rules** in the bar at the bottom. Changed your mind? Click **Undo my changes**.
 
 **Point to make:** this took one minute, not a 3-day ticket, and Tania saw the effect _before_ any customer did.
 
@@ -187,7 +187,7 @@ You should see four rows out of nine situations:
 
 | Situation                        | Today's till → New rules | Why                                              |
 | -------------------------------- | ------------------------ | ------------------------------------------------ |
-| Ray's Tuesday schnitzel          | $23.40 → $18.00          | Schnitzel and pot as one $18 deal, no extra 10%  |
+| Ray's Tuesday schnitzel          | $16.20 → $18.00          | Exact current config: remove the extra member 10% |
 | Tuesday schnitzel without a pot  | $23.00 → $23.00          | Same price; now reported as *Schnitzel Tuesday — no pot* |
 | Member's beer at happy hour      | $18.36 → $20.40          | No more two discounts on one beer                |
 | Staff Parma & Pint on Thursday   | $57.40 → $55.00          | Staff get the bundle when it's cheaper           |
@@ -234,17 +234,17 @@ The editor now says exactly what's wrong instead of showing an empty message.
 3. A red message says _"value: A percentage can't be over 100"_, and nothing is saved.
 4. Close the editor without saving. Nothing needs undoing.
 
-### Use case 12: "Which deals are on the tills, and how do I turn one off?"
+### Use case 12: "Which deals are published, and how do I turn one off?"
 
-Every deal in **Your draft** has a **Status** that says whether the tills already run it. It's worked out by comparing your draft with the new rules, so it can't go out of date.
+Every deal in **Your draft** has a **Status** against the published New rules. It is worked out by comparing the two rulebooks, so it cannot go out of date.
 
 | Status | Meaning |
 | --- | --- |
-| **Published** (green) | The tills run exactly this version |
-| **Changed, not published** | The tills run it, but you've edited it since |
-| **New, not published** | Only in your draft; the tills don't have it |
-| **Turned off, not published** | You switched it off, but the tills still run it until you publish |
-| **Removed, not published** (red, crossed out) | You deleted it, but the tills still run it until you publish |
+| **Published** (green) | New rules contain exactly this version |
+| **Changed, not published** | New rules contain it, but you've edited it since |
+| **New, not published** | It exists only in your draft |
+| **Turned off, not published** | You switched it off in the draft; New rules still have it on |
+| **Removed, not published** (red, crossed out) | You deleted it from the draft; New rules still contain it |
 
 Above the table, the badges count how many deals are published and how many aren't. If you changed **When deals clash**, a badge says so too, since that isn't part of any one deal.
 
@@ -252,17 +252,17 @@ Above the table, the badges count how many deals are published and how many aren
 
 1. Click **Manage deals**. On **Your draft**, every deal says **Published**.
 2. Flip the switch on **Member Discount** to off. Its status becomes **Turned off, not published**, and the badges show **1 not published yet**.
-3. Look at **Who's affected by your changes**: one line, _"Member's pint at 12:30am: $11.70 → $13.00"_. The other member situations don't move, because they already get a better deal. This is the check before it reaches the tills.
-4. Click **Publish to tills**. Member Discount's status goes back to **Published**, and it stays switched off. The **New rules** tab shows it faded.
+3. Look at **Who's affected by your changes**: one line, _"Member's pint at 12:30am: $11.70 → $13.00"_. The other member situations don't move, because they already get a better deal. This is the check before it enters the published New rules.
+4. Click **Publish new rules**. Member Discount's status goes back to **Published**, and it stays switched off. The **New rules** tab shows it faded.
 
 **Change your mind about one deal (Undo):**
 
 1. On **Your draft**, click the pencil on **Happy Hour**, change the percentage to 20, and **Save to draft**. Its status becomes **Changed, not published**.
-2. A curved-arrow **Undo** button appears next to the pencil. Click it: Happy Hour goes back to exactly what the tills run, and the status says **Published**. Other unpublished changes stay as they are. (**Undo my changes** at the bottom throws away *all* of them.)
-3. Click the pencil on **Parma & Pint for Two** and click **Remove**. The deal doesn't disappear: it stays in the table, crossed out, as **Removed, not published**, because the tills still run it.
+2. A curved-arrow **Undo** button appears next to the pencil. Click it: Happy Hour goes back to the published New rules, and the status says **Published**. Other unpublished changes stay as they are. (**Undo my changes** at the bottom throws away *all* of them.)
+3. Click the pencil on **Parma & Pint for Two** and click **Remove**. The deal doesn't disappear: it stays in the table, crossed out, as **Removed, not published**, because it remains in New rules.
 4. Click **Undo** on that row. It comes back as **Published**.
 
-**Point to make:** Tania can always see what the tills are doing, deal by deal. Turning a deal off goes through the same preview as any other change, so nothing reaches customers unseen. There's no switch that changes the tills directly, on purpose.
+**Point to make:** Tania can see the current Trestle setup and the proposed rules deal by deal. Turning a deal off goes through the same preview as any other change. This prototype does not connect to live tills; production integration would send the published New rules to them.
 
 ---
 
@@ -311,7 +311,7 @@ They will change a requirement. First decide: **is it a setting, or a rule?**
 | "Bistro happy hour 5–7"             | Setting     | Manage deals → Happy Hour → Venue exception                               |
 | "Members keep 10% on the schnitzel" | Setting     | Member Discount → tick **both** _Schnitzel Tuesday_ and _Schnitzel Tuesday — no pot_ under "Can be added on top of" |
 | "The pot is part of the deal"       | Setting     | Switch off _Schnitzel Tuesday — no pot_. The preview shows who pays more   |
-| "Pull a deal off the tills tonight" | Setting     | Your draft → switch it off → Publish to tills (use case 12)               |
+| "Pull a deal off the tills tonight" | Setting     | Your draft → switch it off → Publish new rules (use case 12)              |
 | "Melbourne Cup, Victoria only"      | Setting     | Add a deal (use case 4)                                                   |
 | "Any pint counts for Parma & Pint"  | Setting     | Parma & Pint → tick Pale Ale in the pint part                             |
 | "Never discount more than 30%"      | Rule (code) | `packages/pricing-engine/src/engine.ts`, test first                       |

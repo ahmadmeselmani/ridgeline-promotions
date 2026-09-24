@@ -52,7 +52,7 @@ export class PromotionsService {
     const draft = (await this.findAll("draft")).map((candidate) =>
       candidate.promotionId === promotionId ? promotion : candidate,
     );
-    this.assertReferencesExist(promotion, draft);
+    this.assertReferencesExist(promotion, draft, new Set(existing.stacksWith));
     await this.rulebooksService.updateDraftPromotions(() => draft);
     return promotion;
   }
@@ -60,13 +60,10 @@ export class PromotionsService {
   async remove(promotionId: string): Promise<void> {
     await this.findOne("draft", promotionId);
     await this.rulebooksService.updateDraftPromotions((promotions) =>
-      promotions
-        .filter((promotion) => promotion.promotionId !== promotionId)
-        // Nothing may keep stacking on a deal that no longer exists.
-        .map((promotion) => ({
-          ...promotion,
-          stacksWith: promotion.stacksWith.filter((id) => id !== promotionId),
-        })),
+      // Keep incoming stacking references in the draft. They are harmless while
+      // the target is absent, let Undo restore behaviour without touching other
+      // edits, and are cleaned only if the deletion is actually published.
+      promotions.filter((promotion) => promotion.promotionId !== promotionId),
     );
   }
 
@@ -99,7 +96,11 @@ export class PromotionsService {
     return `PRM-${Math.max(0, ...ids.filter(Number.isFinite)) + 1}`;
   }
 
-  private assertReferencesExist(promotion: Promotion, rulebook: Promotion[]): void {
+  private assertReferencesExist(
+    promotion: Promotion,
+    rulebook: Promotion[],
+    previouslyValidStackingIds: ReadonlySet<string> = new Set(),
+  ): void {
     const errors: string[] = [];
 
     const venueIds = [
@@ -126,7 +127,11 @@ export class PromotionsService {
     const promotionIds = new Set(rulebook.map((candidate) => candidate.promotionId));
     for (const id of promotion.stacksWith) {
       if (id === promotion.promotionId) errors.push("A deal can't stack with itself");
-      else if (id !== STACKS_WITH_ANY && !promotionIds.has(id)) {
+      else if (
+        id !== STACKS_WITH_ANY &&
+        !promotionIds.has(id) &&
+        !previouslyValidStackingIds.has(id)
+      ) {
         errors.push(`Can't stack with unknown promotion ${id}`);
       }
     }

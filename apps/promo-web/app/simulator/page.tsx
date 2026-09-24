@@ -52,7 +52,7 @@ const INITIAL_ORDER: Order = {
   date: "2026-09-22",
   time: "19:00",
   customer: { kind: "member", memberNumber: "M-004182" },
-  basket: { "PRD-0201": 1, "PRD-0109": 1 },
+  basket: { "PRD-0201": 1 },
 };
 
 export default function SimulatorPage() {

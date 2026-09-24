@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   DaySchema,
   IsoDateSchema,
+  StartTimeOfDaySchema,
   TimeOfDaySchema,
 } from "../common/common.schema";
 
@@ -37,19 +38,29 @@ export const AppliesToSchema = z.discriminatedUnion("kind", [
 // Window is [startsAt, endsAt) in venue-local time. endsAt earlier than
 // startsAt means the window runs past midnight. `days` are trading days, so
 // 12:30am after a Tuesday night still counts as Tuesday.
-export const ScheduleSchema = z.object({
-  days: z.array(DaySchema).min(1),
-  startsAt: TimeOfDaySchema,
-  endsAt: TimeOfDaySchema,
-  validFrom: IsoDateSchema.nullable(),
-  validTo: IsoDateSchema.nullable(),
-});
+export const ScheduleSchema = z
+  .object({
+    days: z.array(DaySchema).min(1),
+    startsAt: StartTimeOfDaySchema,
+    endsAt: TimeOfDaySchema,
+    validFrom: IsoDateSchema.nullable(),
+    validTo: IsoDateSchema.nullable(),
+  })
+  .superRefine((schedule, ctx) => {
+    if (schedule.validFrom && schedule.validTo && schedule.validFrom > schedule.validTo) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["validTo"],
+        message: "Last day must be on or after first day",
+      });
+    }
+  });
 
 export const VenueOverrideSchema = z.object({
   venueId: z.string().min(1),
   enabled: z.boolean(),
   days: z.array(DaySchema).min(1).optional(),
-  startsAt: TimeOfDaySchema.optional(),
+  startsAt: StartTimeOfDaySchema.optional(),
   endsAt: TimeOfDaySchema.optional(),
 });
 

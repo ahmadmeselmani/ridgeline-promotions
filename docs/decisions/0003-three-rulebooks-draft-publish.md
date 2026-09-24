@@ -7,7 +7,7 @@
 **Decision.** Three rulebooks:
 
 - `legacy`: Trestle's config mapped unchanged. Derived on every read, never stored, read-only.
-- `live`: what tills price with.
+- `live`: the prototype's published New rules; a real till would consume these after integration.
 - `draft`: the only editable one.
 
 Publish copies draft to live in one transaction; discard copies live to draft. `GET /pricing/impact` prices every scenario under two rulebooks and lists the ones that differ.

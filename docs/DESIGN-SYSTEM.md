@@ -60,7 +60,7 @@ Avoid jargon in UI text: no "legacy", "stackable", "priority number" or "ruleboo
 - **Loading:** `LoadingBlock` (skeleton). Keep old data visible while refetching (`placeholderData: keepPreviousData`, dimmed with `opacity-60`).
 - **Error:** `QueryError` (destructive alert, which hints that the API may be down).
 - **Empty:** dashed-border box with one instruction sentence ("Add something in step 3…").
-- **Mutation feedback:** `sonner` toasts. Success says what changed ("Published. Tills now use these rules."); errors show the API message.
+- **Mutation feedback:** `sonner` toasts. Success says what changed ("Published to New rules in this prototype."); errors show the API message.
 
 ## Accessibility and motion
 

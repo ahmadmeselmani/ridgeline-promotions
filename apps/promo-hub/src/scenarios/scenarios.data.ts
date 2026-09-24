@@ -6,14 +6,12 @@ export const SCENARIOS: Scenario[] = [
   {
     scenarioId: "ray-tuesday",
     title: "Ray's Tuesday schnitzel",
-    story: "Ray (gold member) orders Schnitzel Tuesday with a pot at 7pm and expects his 10% on top.",
+    story:
+      "Ray (gold member) orders the schnitzel at 7pm and expects his 10% on top. This reproduces the supplied till config's exact $16.20 result; Trestle supplied no pot product.",
     venueId: "VEN-0233",
     localDateTime: "2026-09-22T19:00",
     customer: { kind: "member", memberNumber: "M-004182" },
-    lines: [
-      { productId: "PRD-0201", quantity: 1 },
-      { productId: "PRD-0109", quantity: 1 },
-    ],
+    lines: [{ productId: "PRD-0201", quantity: 1 }],
   },
   {
     scenarioId: "walkin-schnitzel-no-pot",

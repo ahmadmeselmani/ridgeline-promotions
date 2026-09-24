@@ -23,7 +23,7 @@ The root cause, found in the fixtures: Trestle resolves clashes by `priority`, a
 | ---------------- | ------------ | ------------------------------------------------------------------------------------------- |
 | Start here       | `/`          | Problem statement, 4-step walkthrough, today's till vs new rules for the brief's situations |
 | Price an order   | `/simulator` | Quote any basket at any venue and time; one receipt per rulebook, with reasons              |
-| Manage deals     | `/rulebook`  | Edit your draft → see affected situations → publish or undo. Each deal shows its status against the tills (published, changed, new, turned off, removed) and can be undone on its own |
+| Manage deals     | `/rulebook`  | Edit your draft → see affected situations → publish or undo. Each deal shows its status against the published New rules and can be undone on its own |
 | Week at a glance | `/clashes`   | 7-day × 30-minute grid per venue: overlaps and double discounts                             |
 | Manual prices    | `/overrides` | Record a manual price (permission + reason), reported apart from promotions                 |
 
@@ -33,7 +33,7 @@ The root cause, found in the fixtures: Trestle resolves clashes by `priority`, a
 | ---------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Promotion                                                  | deal                                | One offer: `percent_off`, `fixed_price` or `bundle_price`                                         |
 | Rulebook `legacy`                                          | Today's till                        | Trestle's config, imported unchanged. Read-only, never stored                                     |
-| Rulebook `live`                                            | New rules                           | What tills would price with. Changes only by publishing                                           |
+| Rulebook `live`                                            | New rules                           | Published prototype rules; what tills would use after integration                                  |
 | Rulebook `draft`                                           | Your draft                          | The only editable rulebook                                                                        |
 | Resolution policy `best_price` / `priority`                | "When deals clash"                  | Cheapest single deal wins / Trestle's highest priority wins                                       |
 | `stacksWith`                                               | "Can be added on top of"            | Explicit list of deals this one stacks on. `"*"` (any) exists only to reproduce the legacy config |

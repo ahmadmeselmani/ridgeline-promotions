@@ -82,7 +82,7 @@ export default function RulebookPage() {
     <div className="space-y-6">
       <PageHeader
         title="Manage deals"
-        description="Change deals yourself: no ticket, no three-day wait. Nothing reaches the tills until you publish."
+        description="Change deals yourself: no ticket, no three-day wait. Publishing updates New rules inside this prototype."
       />
 
       <PublishSteps draftDirty={draftDirty} />
@@ -154,9 +154,9 @@ export default function RulebookPage() {
           <TabsContent key={name} value={name} className="mt-3">
             <p className="mb-2 text-sm text-muted-foreground">
               {name === "draft"
-                ? "Your working copy. Use the pencil to change a deal, or the switch to turn it off. The Status column says whether the tills already run it."
+                ? "Your working copy. Use the pencil to change a deal, or the switch to turn it off. The Status column compares it with the published New rules."
                 : name === "live"
-                  ? "What tills charge once published. Read-only: make changes in your draft."
+                  ? "Published prototype rules. Read-only: make changes in your draft."
                   : "Trestle's setup exactly as it is today: the priority number decides clashes, and the member discount goes on top of everything. Read-only."}
             </p>
             {name === "draft" && status.data ? (
@@ -211,12 +211,12 @@ export default function RulebookPage() {
               disabled={publish.isPending}
               onClick={() =>
                 publish.mutate(undefined, {
-                  onSuccess: () => toast.success("Published. Tills now use these rules."),
+                  onSuccess: () => toast.success("Published to New rules in this prototype."),
                   onError: (error) => toast.error(error.message),
                 })
               }
             >
-              <Rocket /> Publish to tills
+              <Rocket /> Publish new rules
             </Button>
           </div>
         </div>

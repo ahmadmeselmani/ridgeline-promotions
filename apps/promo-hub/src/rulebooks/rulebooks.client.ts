@@ -62,6 +62,30 @@ export class RulebooksClient {
     return this.findUnique(name);
   }
 
+  // Publishing also normalizes the draft (for example, removing stacking links
+  // to a deal that was deleted). Save both copies in one transaction so the UI
+  // never reports unpublished changes immediately after a successful publish.
+  async publish(
+    rulebook: Omit<Rulebook, "name" | "updatedAt">,
+  ): Promise<Rulebook> {
+    const rows = toPromotionRows(rulebook.promotions);
+    const names: StoredRulebookName[] = ["live", "draft"];
+    await this.prisma.$transaction(
+      names.flatMap((name) => [
+        this.prisma.rulebook.upsert({
+          where: { name },
+          create: { name, resolution: rulebook.policy.resolution },
+          update: { resolution: rulebook.policy.resolution },
+        }),
+        this.prisma.promotion.deleteMany({ where: { rulebookName: name } }),
+        this.prisma.promotion.createMany({
+          data: rows.map((row) => ({ ...row, rulebookName: name })),
+        }),
+      ]),
+    );
+    return this.findUnique("live");
+  }
+
   private legacy(): Rulebook {
     const products = [...this.trestle.listProducts(""), ...ASSUMED_PRODUCTS];
     return {

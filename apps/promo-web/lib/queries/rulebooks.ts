@@ -41,7 +41,7 @@ export function useRulebook(name: RulebookName) {
   });
 }
 
-// Which deals the tills already run and which are waiting to be published.
+// Which deals match the published New rules and which are waiting to be published.
 export function useDraftStatus() {
   return useQuery({
     queryKey: ["draft-status"],
@@ -100,7 +100,7 @@ export function useDeletePromotion() {
   });
 }
 
-// Undo for one deal: back to exactly what the tills run.
+// Undo for one deal: back to exactly what the published New rules contain.
 export function useRestorePromotion() {
   const invalidate = useInvalidateRules();
   return useMutation({

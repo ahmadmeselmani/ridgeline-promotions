@@ -2,7 +2,7 @@ import { z } from "zod";
 import { PromotionSchema } from "../promotions/promotion.schema";
 
 // legacy = what Trestle is configured with today (read-only, from fixtures).
-// live   = what the tills price with once published through this tool.
+// live   = the prototype's published New rules; real till integration is cut.
 // draft  = Tania's work in progress; publishing copies it to live.
 export const RulebookNameSchema = z.enum(["legacy", "live", "draft"]);
 
