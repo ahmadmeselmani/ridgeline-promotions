@@ -17,6 +17,7 @@ No coding knowledge is needed for parts 2 and 3.
 | Tool           | Why                                       | How to check                          |
 | -------------- | ----------------------------------------- | ------------------------------------- |
 | **Git**        | To download the code                      | `git --version`                       |
+| **nvm**        | Switches to the right Node.js version     | `nvm --version`                       |
 | **Node.js 24** | Runs the system                           | `node --version` should show `v24...` |
 | **pnpm 11**    | Installs the parts                        | `pnpm --version` should show `11...`  |
 | **make**       | Short commands (built into Mac and Linux) | `make --version`                      |
@@ -26,8 +27,10 @@ If you don't have pnpm, run `corepack enable` once (it comes with Node.js).
 ### Install (about 2 minutes)
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/ahmadmeselmani/ridgeline-promotions.git
 cd ridgeline-promotions
+nvm install   # first time only: installs the Node version in .nvmrc
+nvm use       # always run this first, in every new terminal
 make setup
 ```
 
@@ -42,6 +45,7 @@ make setup
 ### Start it
 
 ```bash
+nvm use
 make dev
 ```
 

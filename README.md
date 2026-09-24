@@ -6,9 +6,12 @@ Ridgeline's tills can't be predicted because five promotions overlap. On top of 
 
 ## Run it
 
-Node 24 and pnpm 11. The `Makefile` wraps the root scripts (run `make` to list the targets):
+Node 24 and pnpm 11. The `Makefile` wraps the root scripts (run `make` to list the targets).
+
+Before anything else, switch to the Node version pinned in `.nvmrc` (24.18.0). Run `nvm install` first if you don't have it yet:
 
 ```bash
+nvm use        # always first, in every new terminal
 make setup     # install, create .env files from the examples, migrate + seed SQLite
 make dev       # API on :3004 (Swagger at /docs), web on :3003
 make check     # build, type-check, lint, unit + e2e tests: everything CI would run
