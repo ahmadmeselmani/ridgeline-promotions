@@ -4,7 +4,7 @@ import { PrismaService } from "../database/prisma.service";
 import { ASSUMED_PRODUCTS } from "../trestle/assumptions";
 import { TrestleService } from "../trestle/trestle.service";
 import { fromPromotionRow, toPromotionRows } from "./rulebook.mapper";
-import { mapLegacyPromotion } from "./seed/legacy.mapper";
+import { mapLegacyPromotion } from "./legacy.mapper";
 
 export type StoredRulebookName = Exclude<RulebookName, "legacy">;
 

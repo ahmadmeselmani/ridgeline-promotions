@@ -6,7 +6,9 @@ import {
   HAPPY_HOUR,
   LEGACY_PROMOTIONS,
   PRODUCTS,
+  PARMA_AND_PINT,
   PROPOSED_PROMOTIONS,
+  SCHNITZEL_TUESDAY,
   promo,
 } from "./testing/builders";
 import { tradingMomentFromLocal } from "./time";
@@ -114,20 +116,49 @@ describe("priceBasket — best single deal (proposed)", () => {
     });
   });
 
-  it("tells staff the schnitzel deal needs a pot when it's ordered alone", () => {
+  it.each([
+    ["guest", null, 1800],
+    ["member", "member", 1800],
+  ] as const)(
+    "keeps a %s's schnitzel without a pot at today's $18, and says the bundle needs a pot",
+    (_label, audience, totalCents) => {
+      const result = quote({
+        at: TUE_7PM,
+        audience,
+        lines: [[PRODUCTS.schnitzel.productId, 1]],
+        promotions: PROPOSED_PROMOTIONS,
+        policy: BEST_PRICE,
+      });
+
+      expect(result.totalCents).toBe(totalCents);
+      expect(result.lines[0]?.applied.map((a) => a.name)).toEqual(["Schnitzel Tuesday — no pot"]);
+      expect(result.lines[0]?.skipped).toContainEqual(
+        expect.objectContaining({
+          name: "Schnitzel Tuesday",
+          reason: "Needs 1× Chicken Schnitzel + 1× Pot",
+        }),
+      );
+    },
+  );
+
+  it("still prices schnitzel and pot as the bundle, not the no-pot deal plus a full-price pot", () => {
     const result = quote({
       at: TUE_7PM,
-      audience: "member",
-      lines: [[PRODUCTS.schnitzel.productId, 1]],
+      lines: [
+        [PRODUCTS.schnitzel.productId, 1],
+        [PRODUCTS.lagerPot.productId, 1],
+      ],
       promotions: PROPOSED_PROMOTIONS,
       policy: BEST_PRICE,
     });
 
-    expect(result.totalCents).toBe(2340);
-    expect(result.lines[0]?.skipped).toContainEqual(
+    expect(result.totalCents).toBe(1800);
+    const schnitzel = result.lines.find((line) => line.productId === PRODUCTS.schnitzel.productId);
+    expect(schnitzel?.applied.map((a) => a.name)).toEqual(["Schnitzel Tuesday"]);
+    expect(schnitzel?.skipped).toContainEqual(
       expect.objectContaining({
-        name: "Schnitzel Tuesday",
-        reason: "Needs 1× Chicken Schnitzel + 1× Pot",
+        name: "Schnitzel Tuesday — no pot",
+        reason: expect.stringContaining("cheaper as a bundle"),
       }),
     );
   });
@@ -214,10 +245,117 @@ describe("priceBasket — best single deal (proposed)", () => {
     expect(result.totalCents).toBe(1620);
   });
 
+  it("counts deals allowed on top when choosing the best deal", () => {
+    // 20% off beats 15% off on its own, but members may add their 10% only
+    // to the 15%: $26 → $22.10 → $19.89 is cheaper than $26 → $20.80.
+    const fifteen = promo({
+      promotionId: "PRM-30",
+      name: "Fifteen off",
+      value: 15,
+      appliesTo: { kind: "products", productIds: [PRODUCTS.schnitzel.productId] },
+    });
+    const twenty = promo({
+      promotionId: "PRM-31",
+      name: "Twenty off",
+      value: 20,
+      appliesTo: { kind: "products", productIds: [PRODUCTS.schnitzel.productId] },
+    });
+    const memberOnFifteen = promo({ ...PROPOSED_PROMOTIONS[1]!, stacksWith: ["PRM-30"] });
+
+    const result = quote({
+      at: WED_430PM,
+      audience: "member",
+      lines: [[PRODUCTS.schnitzel.productId, 1]],
+      promotions: [fifteen, twenty, memberOnFifteen],
+      policy: BEST_PRICE,
+    });
+
+    expect(result.totalCents).toBe(1989);
+    expect(result.lines[0]?.applied.map((a) => [a.name, a.role, a.discountCents])).toEqual([
+      ["Fifteen off", "primary", 390],
+      ["Member Discount", "stacked", 221],
+    ]);
+    expect(result.lines[0]?.skipped).toEqual([
+      {
+        promotionId: "PRM-31",
+        name: "Twenty off",
+        reason: "One deal per item — Fifteen off is cheaper ($19.89 vs $20.80)",
+      },
+    ]);
+  });
+
+  it("counts deals allowed on top when deciding whether a bundle is cheaper", () => {
+    // $32 bundle vs $30.60 with the member's 10%: the bundle only wins because
+    // the member's 10% may go on top of it ($32 → $28.80).
+    const bundle = promo({ ...SCHNITZEL_TUESDAY, value: 3200 });
+    const memberOnBundle = promo({ ...PROPOSED_PROMOTIONS[1]!, stacksWith: ["PRM-23"] });
+
+    const result = quote({
+      at: TUE_7PM,
+      audience: "member",
+      lines: [
+        [PRODUCTS.schnitzel.productId, 1],
+        [PRODUCTS.lagerPot.productId, 1],
+      ],
+      promotions: [bundle, memberOnBundle],
+      policy: BEST_PRICE,
+    });
+
+    expect(result.totalCents).toBe(2880);
+    for (const line of result.lines) {
+      expect(line.applied.map((a) => [a.name, a.role])).toEqual([
+        ["Schnitzel Tuesday", "bundle"],
+        ["Member Discount", "stacked"],
+      ]);
+    }
+  });
+
   it("rejects products the venue doesn't sell", () => {
     expect(() =>
       quote({ at: TUE_7PM, lines: [["PRD-9999", 1]], promotions: [], policy: BEST_PRICE }),
     ).toThrow(UnknownProductError);
+  });
+});
+
+describe("priceBasket — a bundle never costs more than its items", () => {
+  const overpricedBundle = promo({ ...PARMA_AND_PINT, value: 10000 });
+  const exactBundle = promo({ ...PARMA_AND_PINT, value: 8200 });
+
+  it.each([
+    ["priority", PRIORITY, overpricedBundle, "Bundle price isn't below the menu price ($100.00 vs $82.00)"],
+    ["best price", BEST_PRICE, overpricedBundle, "Bundle price isn't below the menu price ($100.00 vs $82.00)"],
+    ["priority", PRIORITY, exactBundle, "Bundle price isn't below the menu price ($82.00 vs $82.00)"],
+  ] as const)("skips a bundle priced at or above the menu (%s policy)", (_label, policy, bundle, reason) => {
+    const result = quote({
+      at: THU_630PM,
+      lines: [
+        [PRODUCTS.parma.productId, 2],
+        [PRODUCTS.lagerPint.productId, 2],
+      ],
+      promotions: [bundle],
+      policy,
+    });
+
+    expect(result.totalCents).toBe(8200);
+    expect(result.discountCents).toBe(0);
+    for (const line of result.lines) {
+      expect(line.bundleGroup).toBeNull();
+      expect(line.skipped).toEqual([{ promotionId: "PRM-25", name: "Parma & Pint for Two", reason }]);
+    }
+  });
+
+  it("still forms a bundle priced below the menu under the priority policy", () => {
+    const result = quote({
+      at: THU_630PM,
+      lines: [
+        [PRODUCTS.parma.productId, 2],
+        [PRODUCTS.lagerPint.productId, 2],
+      ],
+      promotions: [promo({ ...PARMA_AND_PINT, value: 8199 })],
+      policy: PRIORITY,
+    });
+
+    expect(result.totalCents).toBe(8199);
   });
 });
 

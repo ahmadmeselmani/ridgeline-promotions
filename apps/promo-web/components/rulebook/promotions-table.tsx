@@ -1,16 +1,17 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { Pencil, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import type { ProductResponse } from "@ridgeline/contracts/products";
 import type { Promotion } from "@ridgeline/contracts/promotions";
+import type { DealStatus } from "@ridgeline/contracts/rulebooks";
 import type { VenueResponse } from "@ridgeline/contracts/venues";
 import { Badge } from "@ridgeline/ui/badge";
 import { Button } from "@ridgeline/ui/button";
 import { Switch } from "@ridgeline/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@ridgeline/ui/table";
-import { AUDIENCE_LABEL, describeDeal, describeSchedule, describeWindow } from "../../lib/format";
-import { useUpdatePromotion } from "../../lib/queries/rulebooks";
+import { AUDIENCE_LABEL, DEAL_STATUS_LABEL, describeDeal, describeSchedule, describeWindow } from "../../lib/format";
+import { useRestorePromotion, useUpdatePromotion } from "../../lib/queries/rulebooks";
 
 export function PromotionsTable({
   promotions,
@@ -18,14 +19,26 @@ export function PromotionsTable({
   products,
   venues,
   onEdit,
+  statuses,
+  removed = [],
 }: {
   promotions: Promotion[];
   editable: boolean;
   products: ProductResponse[];
   venues: VenueResponse[];
   onEdit: (promotion: Promotion) => void;
+  // Draft only: each deal's status against the tills, and deals deleted from
+  // the draft that the tills still run.
+  statuses?: ReadonlyMap<string, DealStatus>;
+  removed?: Promotion[];
 }) {
   const update = useUpdatePromotion();
+  const restore = useRestorePromotion();
+  const undo = (promotion: Promotion) =>
+    restore.mutate(promotion.promotionId, {
+      onSuccess: () => toast(`${promotion.name} is back to what the tills run`),
+      onError: (error) => toast.error(error.message),
+    });
   const productName = (id: string) => products.find((product) => product.productId === id)?.name ?? id;
   const venueName = (id: string) => venues.find((venue) => venue.venueId === id)?.name ?? id;
   const promotionName = (id: string) =>
@@ -40,14 +53,18 @@ export function PromotionsTable({
           <TableHead>When</TableHead>
           <TableHead>Where</TableHead>
           <TableHead>Combines with other deals?</TableHead>
+          {statuses ? <TableHead>Status</TableHead> : null}
           <TableHead className="w-24 text-end">{editable ? "On / edit" : ""}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {promotions.map((promotion) => (
-          <TableRow key={promotion.promotionId} className={promotion.active ? undefined : "opacity-50"}>
+        {[...promotions, ...removed].map((promotion) => {
+          const status = statuses?.get(promotion.promotionId);
+          const isRemoved = status === "removed";
+          return (
+          <TableRow key={promotion.promotionId} className={promotion.active && !isRemoved ? undefined : "opacity-50"}>
             <TableCell className="max-w-72 whitespace-normal">
-              <div className="font-medium">{promotion.name}</div>
+              <div className={isRemoved ? "font-medium line-through" : "font-medium"}>{promotion.name}</div>
               <div className="text-xs text-muted-foreground">{describeDeal(promotion, productName)}</div>
               {promotion.description ? (
                 <div className="mt-1 text-xs text-muted-foreground italic">{promotion.description}</div>
@@ -82,8 +99,21 @@ export function PromotionsTable({
                 <Badge variant="warning">Yes, on top of {promotion.stacksWith.map(promotionName).join(", ")}</Badge>
               )}
             </TableCell>
+            {statuses ? (
+              <TableCell>
+                {status ? (
+                  <Badge variant={status === "published" ? "success" : status === "removed" ? "destructive" : "warning"}>
+                    {DEAL_STATUS_LABEL[status]}
+                  </Badge>
+                ) : null}
+              </TableCell>
+            ) : null}
             <TableCell className="text-end">
-              {editable ? (
+              {editable && isRemoved ? (
+                <Button variant="outline" size="sm" disabled={restore.isPending} onClick={() => undo(promotion)}>
+                  <Undo2 /> Undo
+                </Button>
+              ) : editable ? (
                 <div className="flex items-center justify-end gap-1">
                   <Switch
                     size="sm"
@@ -99,11 +129,24 @@ export function PromotionsTable({
                   <Button variant="ghost" size="icon-sm" aria-label={`Edit ${promotion.name}`} onClick={() => onEdit(promotion)}>
                     <Pencil />
                   </Button>
+                  {status === "changed" || status === "turned_off" ? (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Undo my changes to ${promotion.name}`}
+                      title="Undo my changes to this deal"
+                      disabled={restore.isPending}
+                      onClick={() => undo(promotion)}
+                    >
+                      <Undo2 />
+                    </Button>
+                  ) : null}
                 </div>
               ) : null}
             </TableCell>
           </TableRow>
-        ))}
+          );
+        })}
       </TableBody>
     </Table>
   );

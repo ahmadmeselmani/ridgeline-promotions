@@ -38,7 +38,7 @@ Every module follows `*.controller.ts` → `*.service.ts` → `*.client.ts`, wit
 | `venues`, `products`, `members`, `staff` | Map Trestle's snake_case to contracts                               | Trestle stub                                                             |
 | `rulebooks`                              | Legacy/live/draft, policy, publish/discard                          | Legacy: Trestle (derived per read). Live/draft: SQLite                   |
 | `promotions`                             | CRUD on the **draft** only, and reference checks                    | via `RulebooksService`                                                   |
-| `scenarios`                              | The brief's situations                                              | `scenarios/seed/scenarios.ts`                                            |
+| `scenarios`                              | The brief's situations                                              | `scenarios/scenarios.data.ts`                                            |
 | `pricing`                                | Quote, impact (between two rulebooks), clash grid; calls the engine | other modules' services                                                  |
 | `overrides`                              | Manual prices and their summary                                     | SQLite                                                                   |
 
@@ -53,7 +53,7 @@ Cross-module use goes through the **exported service**, never another module's c
 | Price overrides                                      | SQLite `PriceOverride`         | Belongs on the Trestle sale line in a real build                                                         |
 | Scenarios, assumptions                               | Code                           | Static                                                                                                   |
 
-Schema: `apps/promo-hub/prisma/schema.prisma`. Migrations: `prisma/migrations/`. Seed: `prisma/seed.ts`, which is idempotent. Moving to Postgres means changing the provider, the adapter file and `DATABASE_URL`.
+Schema: `apps/promo-hub/prisma/schema.prisma`. Migrations: `prisma/migrations/`. Seed: `prisma/seed/` (`index.ts` runs the `seeders/`, which write the values in `data/`), and it's idempotent: an existing rulebook is never overwritten. Moving to Postgres means changing the provider, the adapter file and `DATABASE_URL`.
 
 ## API
 

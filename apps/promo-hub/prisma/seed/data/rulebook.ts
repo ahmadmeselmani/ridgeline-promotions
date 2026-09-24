@@ -63,6 +63,22 @@ export const PROPOSED_PROMOTIONS: Promotion[] = [
     active: true,
   },
   {
+    promotionId: "PRM-26",
+    name: "Schnitzel Tuesday — no pot",
+    description:
+      "Keeps today's $18 for a schnitzel ordered without a pot, so nobody pays more while we wait on Tania (question 3). Remove it if she says the pot is part of the deal.",
+    type: "fixed_price",
+    value: 1800,
+    appliesTo: { kind: "products", productIds: ["PRD-0201"] },
+    audience: "everyone",
+    schedule: { days: ["tue"], startsAt: "11:00", endsAt: "21:00", validFrom: null, validTo: null },
+    venueIds: null,
+    venueOverrides: [],
+    stacksWith: [],
+    priority: 10,
+    active: true,
+  },
+  {
     promotionId: "PRM-24",
     name: "Staff Discount",
     description: "30% off for staff, unless a deal is cheaper.",

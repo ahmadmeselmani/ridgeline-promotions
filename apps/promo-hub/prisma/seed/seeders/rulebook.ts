@@ -1,6 +1,6 @@
-import type { PrismaClient } from "../../database/generated/prisma/client";
-import { toPromotionRows } from "../rulebook.mapper";
-import { PROPOSED_POLICY, PROPOSED_PROMOTIONS } from "./proposed-rulebook";
+import type { PrismaClient } from "../../../src/database/generated/prisma/client";
+import { toPromotionRows } from "../../../src/rulebooks/rulebook.mapper";
+import { PROPOSED_POLICY, PROPOSED_PROMOTIONS } from "../data/rulebook";
 
 // Idempotent: only creates a rulebook that doesn't exist yet, so running the
 // seed on every `pnpm dev` never overwrites Tania's draft.

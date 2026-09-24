@@ -14,6 +14,7 @@ import type {
   PromotionType,
   VenueOverride,
 } from "@ridgeline/contracts/promotions";
+import type { ResolutionPolicy } from "@ridgeline/contracts/rulebooks";
 import type { VenueResponse } from "@ridgeline/contracts/venues";
 import { Button } from "@ridgeline/ui/button";
 import { Checkbox } from "@ridgeline/ui/checkbox";
@@ -49,6 +50,11 @@ const TYPE_LABEL: Record<PromotionType, string> = {
   bundle_price: "Bundle price",
 };
 
+const PRIORITY_HINT: Record<ResolutionPolicy, string> = {
+  best_price: "Higher wins only when two deals give the same price",
+  priority: "Higher wins when two deals apply, even if it costs the customer more",
+};
+
 export function PromotionEditor({
   open,
   onOpenChange,
@@ -57,6 +63,7 @@ export function PromotionEditor({
   otherPromotions,
   venues,
   products,
+  resolution,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -65,6 +72,8 @@ export function PromotionEditor({
   otherPromotions: Promotion[];
   venues: VenueResponse[];
   products: ProductResponse[];
+  // The draft's "When deals clash" rule: it changes what priority does.
+  resolution: ResolutionPolicy;
 }) {
   const [form, setForm] = useState<CreatePromotionInput>(initial);
   const create = useCreatePromotion();
@@ -93,10 +102,10 @@ export function PromotionEditor({
     try {
       if (promotionId) {
         await updatePromotion.mutateAsync({ promotionId, input: form });
-        toast.success(`${form.name} updated in the draft`);
+        toast.success(`${form.name} updated in your draft`);
       } else {
         await create.mutateAsync(form);
-        toast.success(`${form.name} added to the draft`);
+        toast.success(`${form.name} added to your draft`);
       }
       onOpenChange(false);
     } catch (error) {
@@ -108,7 +117,7 @@ export function PromotionEditor({
     if (!promotionId) return;
     try {
       await remove.mutateAsync(promotionId);
-      toast.success(`${form.name} removed from the draft`);
+      toast.success(`${form.name} removed from your draft`);
       onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't remove");
@@ -120,7 +129,7 @@ export function PromotionEditor({
       <SheetContent className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
         <SheetHeader>
           <SheetTitle>{promotionId ? `Edit ${initial.name}` : "New promotion"}</SheetTitle>
-          <SheetDescription>Changes go into the draft. Nothing reaches the tills until you publish.</SheetDescription>
+          <SheetDescription>Changes go into your draft. Nothing reaches the tills until you publish.</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-4">
@@ -264,7 +273,7 @@ export function PromotionEditor({
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Priority" hint="Only breaks exact ties">
+            <Field label="Priority" hint={PRIORITY_HINT[resolution]}>
               <Input type="number" value={form.priority} onChange={(e) => set("priority", Number(e.target.value))} />
             </Field>
             <Field label="Switched on">

@@ -21,6 +21,7 @@ import { useProducts, useVenues } from "../../lib/queries/catalog";
 import { useImpact } from "../../lib/queries/pricing";
 import {
   useDiscardDraft,
+  useDraftStatus,
   usePublishDraft,
   useRulebook,
   useRulebooks,
@@ -55,6 +56,18 @@ export default function RulebookPage() {
   const products = useProducts("VEN-0233");
   const draftDirty = summaries.data?.find((r) => r.name === "draft")?.hasUnpublishedChanges ?? false;
   const impact = useImpact("live", "draft", draftDirty);
+  const status = useDraftStatus();
+  const statuses = new Map(status.data?.deals.map((deal) => [deal.promotionId, deal.status]));
+  const publishedCount = status.data?.deals.filter((deal) => deal.status === "published").length ?? 0;
+  const pendingCount = (status.data?.deals.length ?? 0) - publishedCount;
+  // Say what's unpublished: a changed clash rule isn't a deal, so without this
+  // the bar can show with every deal marked Published.
+  const pending = [
+    ...(pendingCount > 0 ? [`${pendingCount} ${pendingCount === 1 ? "deal" : "deals"}`] : []),
+    ...(status.data?.policyChanged && draft.data
+      ? [`the “When deals clash” rule (your draft: ${POLICY_LABEL[draft.data.policy.resolution].toLowerCase()})`]
+      : []),
+  ];
 
   const publish = usePublishDraft();
   const discard = useDiscardDraft();
@@ -141,11 +154,20 @@ export default function RulebookPage() {
           <TabsContent key={name} value={name} className="mt-3">
             <p className="mb-2 text-sm text-muted-foreground">
               {name === "draft"
-                ? "Your working copy. Use the pencil to change a deal, or the switch to turn it off."
+                ? "Your working copy. Use the pencil to change a deal, or the switch to turn it off. The Status column says whether the tills already run it."
                 : name === "live"
                   ? "What tills charge once published. Read-only: make changes in your draft."
                   : "Trestle's setup exactly as it is today: the priority number decides clashes, and the member discount goes on top of everything. Read-only."}
             </p>
+            {name === "draft" && status.data ? (
+              <p className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                <Badge variant="success">{publishedCount} published</Badge>
+                {pendingCount > 0 ? <Badge variant="warning">{pendingCount} not published yet</Badge> : null}
+                {status.data.policyChanged ? (
+                  <Badge variant="warning">&ldquo;When deals clash&rdquo; changed, not published</Badge>
+                ) : null}
+              </p>
+            ) : null}
             <Card className="py-0">
               {shown.isPending || venues.isPending || products.isPending ? (
                 <LoadingBlock />
@@ -158,6 +180,8 @@ export default function RulebookPage() {
                   products={products.data ?? []}
                   venues={venues.data ?? []}
                   onEdit={openEditor}
+                  statuses={name === "draft" && status.data ? statuses : undefined}
+                  removed={name === "draft" ? status.data?.removed : undefined}
                 />
               )}
             </Card>
@@ -168,16 +192,18 @@ export default function RulebookPage() {
       {draftDirty ? (
         <div className="sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3 shadow-lg">
           <p className="text-sm">
-            <span className="font-medium">Ready when you are.</span>{" "}
+            <span className="font-medium">
+              {pending.length > 0 ? `Not published yet: ${pending.join(" and ")}.` : "Ready when you are."}
+            </span>{" "}
             {impact.data
-              ? `${impact.data.changed.length} of ${impact.data.scenarioCount} situations change price.`
+              ? `${impact.data.changed.length} of ${impact.data.scenarioCount} situations change (price or deal).`
               : "Checking what changes…"}
           </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
               disabled={discard.isPending}
-              onClick={() => discard.mutate(undefined, { onSuccess: () => toast("Draft reset to the new rules") })}
+              onClick={() => discard.mutate(undefined, { onSuccess: () => toast("Your draft now matches the new rules") })}
             >
               <Undo2 /> Undo my changes
             </Button>
@@ -206,6 +232,7 @@ export default function RulebookPage() {
           otherPromotions={draft.data.promotions.filter((p) => p.promotionId !== editor.promotionId)}
           venues={venues.data}
           products={products.data}
+          resolution={draft.data.policy.resolution}
         />
       ) : null}
     </div>

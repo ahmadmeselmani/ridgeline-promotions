@@ -16,6 +16,18 @@ export const SCENARIOS: Scenario[] = [
     ],
   },
   {
+    scenarioId: "walkin-schnitzel-no-pot",
+    title: "Tuesday schnitzel without a pot",
+    story: "A driver orders Schnitzel Tuesday with a soft drink instead of a pot at 7pm.",
+    venueId: "VEN-0233",
+    localDateTime: "2026-09-22T19:00",
+    customer: { kind: "guest" },
+    lines: [
+      { productId: "PRD-0201", quantity: 1 },
+      { productId: "PRD-0108", quantity: 1 },
+    ],
+  },
+  {
     scenarioId: "member-happy-hour",
     title: "Member's beer at happy hour",
     story: "A member buys two pints at 4:30pm on a Wednesday.",

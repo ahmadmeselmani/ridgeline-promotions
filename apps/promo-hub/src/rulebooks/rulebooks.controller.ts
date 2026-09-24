@@ -1,11 +1,13 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import type {
+  DraftStatusResponse,
   RulebookName,
   RulebookResponse,
   RulebookSummary,
   UpdatePolicyInput,
 } from "@ridgeline/contracts/rulebooks";
 import {
+  DraftStatusResponseSchema,
   RulebookNameSchema,
   RulebookResponseSchema,
   RulebookSummarySchema,
@@ -33,6 +35,15 @@ export class RulebooksController {
   @Get()
   findAll(): Promise<RulebookSummary[]> {
     return this.rulebooksService.findAll();
+  }
+
+  @ApiEndpoint({
+    summary: "Each draft deal's status against what the tills run: published, changed, new, turned off or removed",
+    responses: [apiResponse.ok(DraftStatusResponseSchema)],
+  })
+  @Get(RULEBOOKS_PATHS.DRAFT_STATUS)
+  draftStatus(): Promise<DraftStatusResponse> {
+    return this.rulebooksService.draftStatus();
   }
 
   @ApiEndpoint({

@@ -97,6 +97,16 @@ export class PromotionsController {
   }
 
   @ApiEndpoint({
+    summary: "Put a promotion back in the draft exactly as published (undo for one deal)",
+    request: { params: PROMOTION_ID_PARAMS },
+    responses: [apiResponse.created(PromotionResponseSchema), apiResponse.notFound()],
+  })
+  @Post(PROMOTIONS_PATHS.RESTORE)
+  restore(@Param("promotionId") promotionId: string): Promise<PromotionResponse> {
+    return this.promotionsService.restore(promotionId);
+  }
+
+  @ApiEndpoint({
     summary: "Remove a promotion from the draft",
     request: { params: PROMOTION_ID_PARAMS },
     responses: [apiResponse.empty(HttpStatus.NO_CONTENT), apiResponse.notFound()],

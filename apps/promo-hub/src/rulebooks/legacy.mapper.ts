@@ -10,7 +10,7 @@ import type {
   TrestleAppliesTo,
   TrestleProduct,
   TrestlePromotion,
-} from "../../trestle/trestle.types";
+} from "../trestle/trestle.types";
 
 /**
  * Maps Trestle's promotion config onto our model *without changing what it

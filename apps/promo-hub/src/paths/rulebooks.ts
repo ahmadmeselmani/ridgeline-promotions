@@ -4,4 +4,5 @@ export enum RULEBOOKS_PATHS {
   DRAFT_POLICY = "draft/policy",
   DRAFT_PUBLISH = "draft/publish",
   DRAFT_DISCARD = "draft/discard",
+  DRAFT_STATUS = "draft/status",
 }

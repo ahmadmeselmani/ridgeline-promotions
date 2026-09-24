@@ -50,10 +50,49 @@ describe("Promo hub (e2e)", () => {
       .expect(400);
   });
 
-  it("PATCH /promotions/:id validates the merged promotion", async () => {
-    await request(server())
+  // The editor shows `message` as the error toast, so it must say what's wrong.
+  it("PATCH /promotions/:id validates the merged promotion with a readable message", async () => {
+    const response = await request(server())
       .patch("/promotions/PRM-21")
       .send({ value: 150 })
       .expect(400);
+
+    const body = response.body as { message: string; issues: { properties?: Record<string, unknown> } };
+    expect(body.message).toBe("value: A percentage can't be over 100");
+    expect(body.issues.properties).toHaveProperty("value");
+  });
+
+  it("a malformed request body names the field that's wrong", async () => {
+    const response = await request(server())
+      .patch("/promotions/PRM-21")
+      .send({ schedule: { days: [], startsAt: "16:00", endsAt: "18:00", validFrom: null, validTo: null } })
+      .expect(400);
+
+    const body = response.body as { message: string };
+    expect(body.message).toMatch(/^schedule\.days: /);
+  });
+
+  it("GET /rulebooks/draft/status and POST /promotions/:id/restore work over HTTP", async () => {
+    await request(server()).delete("/promotions/PRM-25").expect(204);
+
+    const before = await request(server()).get("/rulebooks/draft/status").expect(200);
+    const deals = (before.body as { data: { deals: Array<{ promotionId: string; status: string }> } }).data.deals;
+    expect(deals).toContainEqual({ promotionId: "PRM-25", status: "removed" });
+
+    await request(server()).post("/promotions/PRM-25/restore").expect(201);
+    const after = await request(server()).get("/rulebooks/draft/status").expect(200);
+    expect((after.body as { data: { removed: unknown[] } }).data.removed).toEqual([]);
+
+    // "draft/status" must not be swallowed by GET /rulebooks/:name.
+    await request(server()).get("/rulebooks/draft").expect(200);
+  });
+
+  it("an unknown product is refused with a readable message", async () => {
+    const response = await request(server())
+      .patch("/promotions/PRM-21")
+      .send({ appliesTo: { kind: "products", productIds: ["PRD-9999"] } })
+      .expect(400);
+
+    expect((response.body as { message: string }).message).toBe("Unknown product PRD-9999");
   });
 });

@@ -62,7 +62,7 @@ export function ImpactList({ impact, emptyText }: { impact: ImpactResponse; empt
         );
       })}
       <div className="px-3 py-2 text-xs text-muted-foreground">
-        {impact.changed.length} of {impact.scenarioCount} situations change price. The rest stay the same.{" "}
+        {impact.changed.length} of {impact.scenarioCount} situations change (price or deal). The rest stay the same.{" "}
         <Button variant="link" size="xs" className="h-auto p-0" onClick={() => setOpen(null)}>
           Collapse all
         </Button>

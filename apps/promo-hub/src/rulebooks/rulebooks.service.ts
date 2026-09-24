@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import type { Promotion } from "@ridgeline/contracts/promotions";
 import type {
+  DealStatus,
+  DraftStatusResponse,
   PricingPolicy,
   RulebookName,
   RulebookResponse,
@@ -50,9 +52,36 @@ export class RulebooksService {
     });
   }
 
+  // Compares each draft deal with its live version, so Tania can see which
+  // deals the tills already run and which are waiting to be published.
+  async draftStatus(): Promise<DraftStatusResponse> {
+    const [draft, live] = await Promise.all([
+      this.rulebooksClient.findUnique("draft"),
+      this.rulebooksClient.findUnique("live"),
+    ]);
+    const liveById = new Map(live.promotions.map((p) => [p.promotionId, p]));
+    const draftIds = new Set(draft.promotions.map((p) => p.promotionId));
+    const removed = live.promotions.filter((p) => !draftIds.has(p.promotionId));
+
+    return {
+      deals: [
+        ...draft.promotions.map((promotion) => ({
+          promotionId: promotion.promotionId,
+          status: dealStatus(promotion, liveById.get(promotion.promotionId)),
+        })),
+        ...removed.map((promotion) => ({
+          promotionId: promotion.promotionId,
+          status: "removed" as const,
+        })),
+      ],
+      removed,
+      policyChanged: draft.policy.resolution !== live.policy.resolution,
+    };
+  }
+
   async publish(): Promise<RulebookResponse> {
     if (!(await this.draftDiffersFromLive())) {
-      throw new BadRequestException("Nothing to publish — the draft matches live");
+      throw new BadRequestException("Nothing to publish — your draft matches the new rules");
     }
     const draft = await this.rulebooksClient.findUnique("draft");
     return this.rulebooksClient.save({ ...draft, name: "live" });
@@ -73,4 +102,11 @@ export class RulebooksService {
       JSON.stringify([live.policy, live.promotions])
     );
   }
+}
+
+function dealStatus(draft: Promotion, live: Promotion | undefined): DealStatus {
+  if (!live) return "new";
+  // Switching off matters most at the till, so it wins over other edits.
+  if (live.active && !draft.active) return "turned_off";
+  return JSON.stringify(draft) === JSON.stringify(live) ? "published" : "changed";
 }
