@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { AppModule } from "../app.module";
 import { useFreshDatabase } from "../testing/test-database";
 import { RulebooksClient } from "./rulebooks.client";
-import { PROPOSED_PROMOTIONS } from "./seed/proposed-rulebook";
+import { PROPOSED_PROMOTIONS } from "../../prisma/seed/data/rulebook";
 
 describe("RulebooksClient", () => {
   let app: INestApplicationContext;

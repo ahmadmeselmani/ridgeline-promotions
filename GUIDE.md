@@ -60,7 +60,7 @@ To stop it, press `Ctrl + C` in the terminal.
 make check
 ```
 
-This builds everything and runs all 41 automatic tests. It should end with no errors.
+This builds everything and runs all 66 automatic tests. It should end with no errors.
 
 ### If something goes wrong
 
@@ -70,6 +70,8 @@ This builds everything and runs all 41 automatic tests. It should end with no er
 | "Port 3003/3004 already in use"                        | Another copy is running. Close it, or find the other terminal and press `Ctrl + C`.   |
 | The demo data is messy after testing                   | Run `make dbreset`, then `make dev`. You're back to the starting deals.               |
 | `node` or `pnpm` not found                             | Install Node.js 24, then run `corepack enable`.                                       |
+| The publish bar is still there, but every deal says **Published** | Something that isn't a deal is unpublished: the **When deals clash** rule. The bar names it. Set it back to _Customer gets their single best deal_, or click **Undo my changes**. |
+| **Schnitzel Tuesday — no pot** is missing from Manage deals | Your database was filled before that deal existed (the starting deals are only added once). Run `make dbreset`, then `make dev`. |
 
 ---
 
@@ -81,7 +83,7 @@ This builds everything and runs all 41 automatic tests. It should end with no er
 
 - Happy Hour: 15% off drinks, 4–6pm on weekdays
 - Member Discount: 10% off everything
-- Schnitzel Tuesday: $18 schnitzel with a pot
+- Schnitzel Tuesday: $18 schnitzel with a pot (a schnitzel on its own stays $18, as it is today)
 - Staff Discount: 30% off everything
 - Parma & Pint for Two: $55 on Thursdays
 
@@ -110,6 +112,12 @@ When a customer qualifies for more than one, **nobody knows what the till will c
 ## Part 3: Use cases, step by step
 
 Open **http://localhost:3003**. The menu at the top has five pages. Follow them left to right.
+
+Use cases 1–7 are the demo. Use cases 8–11 check the fixes made after the code review; they're mostly for the technical walkthrough. Use case 12 shows which deals are live and how to turn one off.
+
+> **Tip for trying things out:** anything you change in **Manage deals** goes into **Your draft** only. To see it priced, open **Price an order** and turn on **Your draft** next to "Show receipts for". When you're done, click **Undo my changes** on Manage deals (or run `make dbreset`) so the demo data is clean again.
+>
+> The prices in these use cases assume **When deals clash** is set to _Customer gets their single best deal_ (the starting setting). If a use case gives a different answer, check that first.
 
 ### Use case 1: "Why does Ray pay $16.20?"
 
@@ -169,9 +177,88 @@ Try this: pick **Staff Parma & Pint on Thursday**. Today the staff member pays *
 
 ### Use case 7: "What changes for customers overall?"
 
-Open **Start here**. The list **What changes for customers** shows every example situation from the brief. Green means the customer pays less; red means more. Click a row to see both receipts.
+Open **Start here**. The list **What changes for customers** shows every example situation from the brief whose price **or deal** changes. Green means the customer pays less, red means more, and grey **no change** means the same price under a different deal. Click a row to see both receipts.
+
+You should see four rows out of nine situations:
+
+| Situation                        | Today's till → New rules | Why                                              |
+| -------------------------------- | ------------------------ | ------------------------------------------------ |
+| Ray's Tuesday schnitzel          | $23.40 → $18.00          | Schnitzel and pot as one $18 deal, no extra 10%  |
+| Tuesday schnitzel without a pot  | $23.00 → $23.00          | Same price; now reported as *Schnitzel Tuesday — no pot* |
+| Member's beer at happy hour      | $18.36 → $20.40          | No more two discounts on one beer                |
+| Staff Parma & Pint on Thursday   | $57.40 → $55.00          | Staff get the bundle when it's cheaper           |
 
 Be ready to explain the red one: **members pay more for happy-hour beer** ($18.36 → $20.40 for two pints), because they no longer get two discounts. That follows Tania's own rule, but it's a business decision for her, so the system shows it clearly instead of hiding it.
+
+### Use case 8: "Someone orders the Tuesday schnitzel but doesn't want a pot"
+
+Tania said the $18 schnitzel "includes a pot", but a driver might want a soft drink instead. Until she tells us what she wants, **nobody pays more than today**.
+
+1. Click **Price an order**, then the **Tuesday schnitzel without a pot** button.
+2. Both receipts say **$23.00**: the schnitzel for $18 plus a $5 soft drink.
+3. On the **New rules** receipt, the schnitzel shows **Schnitzel Tuesday — no pot**. Under **Not applied**, *Schnitzel Tuesday* says _"Needs 1× Chicken Schnitzel + 1× Pot"_.
+4. Now add a **Lager — pot** with **+**. The total stays **$23.00** ($18 for the schnitzel and pot together, plus the soft drink): the pot comes free with the deal. The schnitzel now shows **Schnitzel Tuesday**, not the no-pot deal.
+
+**Point to make:** the no-pot deal is there on purpose, and its description in Manage deals says so. If Tania says the pot is part of the deal, switch it off and the preview shows who pays more.
+
+### Use case 9: "A smaller deal plus the member's 10% beats a bigger deal"
+
+When a rule allows the member discount on top of one deal, the system compares the **final** prices, extras included. Before the fix it compared the deals alone and could charge a member more than necessary.
+
+1. On **Manage deals**, click **Add a deal**. Name: `Schnitzel 15% off`. Kind: **Percent off**, 15. What it covers: **Specific items**, tick **Chicken Schnitzel**. Leave the days and times as they are (every day, all day). **Save to draft**.
+2. Add another: `Schnitzel 20% off`, **Percent off**, 20, **Specific items**, **Chicken Schnitzel**. **Save to draft**.
+3. Click the pencil on **Member Discount**. Under **Can be added on top of**, tick **Schnitzel 15% off** only. **Save to draft**.
+4. Go to **Price an order**. Pick The Brass Anchor, a **Wednesday** (for example 23 Sep 2026) at 12:00, **Member** (Ray), and one **Chicken Schnitzel**. Turn on **Your draft**.
+5. The **Your draft** receipt says **$19.89**: *Schnitzel 15% off* ($26.00 → $22.10) plus *Member Discount* on top (−$2.21). Under **Not applied**, *Schnitzel 20% off* says _"One deal per item — Schnitzel 15% off is cheaper ($19.89 vs $20.80)"_.
+6. Clean up: **Undo my changes** on Manage deals.
+
+### Use case 10: "A bundle priced higher than buying the items separately"
+
+A bundle is never charged if it costs the same as, or more than, its items at menu price, whatever the rules. The same already applied to a set price on a single item.
+
+1. On **Manage deals**, click the pencil on **Parma & Pint for Two**. Set the price to **100** and **Save to draft**.
+2. On **Price an order**, pick a **Thursday** (for example 24 Sep 2026) at **18:30**, **Walk-in**, then 2× **Parmigiana** and 2× **Lager — pint**. Turn on **Your draft**.
+3. The draft receipt charges the menu price, **$82.00**. Under **Not applied**, the bundle says _"Bundle price isn't below the menu price ($100.00 vs $82.00)"_.
+4. Clean up: **Undo my changes**.
+
+### Use case 11: "Tania types something the system can't accept"
+
+The editor now says exactly what's wrong instead of showing an empty message.
+
+1. On **Manage deals**, click the pencil on **Happy Hour**.
+2. Set **Percent off** to **150** and click **Save to draft**.
+3. A red message says _"value: A percentage can't be over 100"_, and nothing is saved.
+4. Close the editor without saving. Nothing needs undoing.
+
+### Use case 12: "Which deals are on the tills, and how do I turn one off?"
+
+Every deal in **Your draft** has a **Status** that says whether the tills already run it. It's worked out by comparing your draft with the new rules, so it can't go out of date.
+
+| Status | Meaning |
+| --- | --- |
+| **Published** (green) | The tills run exactly this version |
+| **Changed, not published** | The tills run it, but you've edited it since |
+| **New, not published** | Only in your draft; the tills don't have it |
+| **Turned off, not published** | You switched it off, but the tills still run it until you publish |
+| **Removed, not published** (red, crossed out) | You deleted it, but the tills still run it until you publish |
+
+Above the table, the badges count how many deals are published and how many aren't. If you changed **When deals clash**, a badge says so too, since that isn't part of any one deal.
+
+**Turn off a published deal:**
+
+1. Click **Manage deals**. On **Your draft**, every deal says **Published**.
+2. Flip the switch on **Member Discount** to off. Its status becomes **Turned off, not published**, and the badges show **1 not published yet**.
+3. Look at **Who's affected by your changes**: one line, _"Member's pint at 12:30am: $11.70 → $13.00"_. The other member situations don't move, because they already get a better deal. This is the check before it reaches the tills.
+4. Click **Publish to tills**. Member Discount's status goes back to **Published**, and it stays switched off. The **New rules** tab shows it faded.
+
+**Change your mind about one deal (Undo):**
+
+1. On **Your draft**, click the pencil on **Happy Hour**, change the percentage to 20, and **Save to draft**. Its status becomes **Changed, not published**.
+2. A curved-arrow **Undo** button appears next to the pencil. Click it: Happy Hour goes back to exactly what the tills run, and the status says **Published**. Other unpublished changes stay as they are. (**Undo my changes** at the bottom throws away *all* of them.)
+3. Click the pencil on **Parma & Pint for Two** and click **Remove**. The deal doesn't disappear: it stays in the table, crossed out, as **Removed, not published**, because the tills still run it.
+4. Click **Undo** on that row. It comes back as **Published**.
+
+**Point to make:** Tania can always see what the tills are doing, deal by deal. Turning a deal off goes through the same preview as any other change, so nothing reaches customers unseen. There's no switch that changes the tills directly, on purpose.
 
 ---
 
@@ -197,9 +284,10 @@ Follow the **Start here** page from top to bottom:
   - A **NestJS API**: it reads Trestle's data and stores the deals in SQLite.
   - A **Next.js web app**: it only displays results; it never calculates prices itself.
 - **Key decisions:**
-  - Best single deal instead of Trestle's "priority" rule.
+  - Best single deal instead of Trestle's "priority" rule. "Best" means the final price, including any extras a rule allows on top (use case 9).
+  - A bundle or set price is never charged if it's not below the menu price (use case 10).
   - Stacking only when explicitly allowed, deal by deal.
-  - Draft → check impact → publish.
+  - Draft → check impact → publish, with a status on every deal (Published, Changed, New, Turned off, Removed) worked out by comparing draft with live, never stored (use case 12).
   - "Today's till" is rebuilt from Trestle's data on every read, so we can prove we reproduce the current problem exactly.
 - **What I cut, and why:** payments, logins, publish history, real till integration. They weren't needed to solve the problem inside the time box.
 - **Trestle gaps I found:**
@@ -217,7 +305,9 @@ They will change a requirement. First decide: **is it a setting, or a rule?**
 | If they ask…                        | It's a…     | Where                                                                     |
 | ----------------------------------- | ----------- | ------------------------------------------------------------------------- |
 | "Bistro happy hour 5–7"             | Setting     | Manage deals → Happy Hour → Venue exception                               |
-| "Members keep 10% on the schnitzel" | Setting     | Member Discount → tick _Schnitzel Tuesday_ under "Can be added on top of" |
+| "Members keep 10% on the schnitzel" | Setting     | Member Discount → tick **both** _Schnitzel Tuesday_ and _Schnitzel Tuesday — no pot_ under "Can be added on top of" |
+| "The pot is part of the deal"       | Setting     | Switch off _Schnitzel Tuesday — no pot_. The preview shows who pays more   |
+| "Pull a deal off the tills tonight" | Setting     | Your draft → switch it off → Publish to tills (use case 12)               |
 | "Melbourne Cup, Victoria only"      | Setting     | Add a deal (use case 4)                                                   |
 | "Any pint counts for Parma & Pint"  | Setting     | Parma & Pint → tick Pale Ale in the pint part                             |
 | "Never discount more than 30%"      | Rule (code) | `packages/pricing-engine/src/engine.ts`, test first                       |
@@ -228,4 +318,5 @@ Say out loud: _"First I'll write a test for the new behaviour, then change the c
 
 - **"Does the real till use this now?"** No. It's a working prototype. The till would call the same pricing engine once Trestle supports it.
 - **"Why do some members pay more?"** Because Tania's rule is "best single deal". If she wants members to keep extras on some deals, that's a setting (see the live-change table above), not new code.
+- **"Why are there two Schnitzel Tuesday deals?"** Tania said the $18 "includes a pot", so the main deal is schnitzel plus pot. A schnitzel on its own is $18 today, and I didn't want anyone's price to go up before she answers. So the second deal keeps it at $18, and it's reported under its own name so we can see how often it happens.
 - **"What did you assume?"** The list is on the Start here page: which venues are the bistros, the pot price, and a few others. Each one is waiting on Tania's answers.

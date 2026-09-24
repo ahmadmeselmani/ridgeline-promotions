@@ -1,6 +1,6 @@
 import type { Day } from "@ridgeline/contracts/common";
 import type { Audience, Promotion, Schedule } from "@ridgeline/contracts/promotions";
-import type { RulebookName } from "@ridgeline/contracts/rulebooks";
+import type { DealStatus, RulebookName } from "@ridgeline/contracts/rulebooks";
 
 export const DAY_ORDER: readonly Day[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
@@ -25,6 +25,15 @@ export const RULEBOOK_HINT: Record<RulebookName, string> = {
   legacy: "How Trestle prices it right now",
   live: "What tills charge once published",
   draft: "Your unpublished changes",
+};
+
+// Where a deal in your draft stands against what the tills run.
+export const DEAL_STATUS_LABEL: Record<DealStatus, string> = {
+  published: "Published",
+  changed: "Changed, not published",
+  new: "New, not published",
+  turned_off: "Turned off, not published",
+  removed: "Removed, not published",
 };
 
 export const AUDIENCE_LABEL: Record<Audience, string> = {

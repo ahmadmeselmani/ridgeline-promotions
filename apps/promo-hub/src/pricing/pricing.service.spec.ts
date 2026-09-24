@@ -50,6 +50,22 @@ describe("PricingService", () => {
     expect(quote.customer.label).toBe("R. Castellano (gold member)");
   });
 
+  it("keeps a Tuesday schnitzel without a pot at today's $18 under the published rules", async () => {
+    const guest = { ...raysTuesday("live"), customer: { kind: "guest" } } as const;
+    const [today, published] = await Promise.all([
+      pricing.quote({ ...guest, rulebook: "legacy" }),
+      pricing.quote(guest),
+    ]);
+    expect(today.totalCents).toBe(1800);
+    expect(published.totalCents).toBe(1800);
+    expect(published.lines[0]?.applied.map((a) => a.name)).toEqual(["Schnitzel Tuesday — no pot"]);
+
+    // Same price, different deal: the preview lists it so the change is seen.
+    const impact = await pricing.impact({ from: "legacy", to: "live" });
+    const noPot = impact.changed.find((item) => item.scenarioId === "walkin-schnitzel-no-pot");
+    expect(noPot?.deltaCents).toBe(0);
+  });
+
   it("converts a till timestamp to venue time before pricing", async () => {
     // 07:00Z on 23 Sep = 4:30pm in Adelaide (+09:30): happy hour.
     const quote = await pricing.quote({

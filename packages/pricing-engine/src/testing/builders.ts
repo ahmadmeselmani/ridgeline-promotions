@@ -71,6 +71,18 @@ export const SCHNITZEL_TUESDAY = promo({
   priority: 10,
 });
 
+// Keeps today's $18 for a schnitzel ordered without a pot, so nobody's price
+// goes up until Tania says what "including a pot" means.
+export const SCHNITZEL_NO_POT = promo({
+  promotionId: "PRM-26",
+  name: "Schnitzel Tuesday — no pot",
+  type: "fixed_price",
+  value: 1800,
+  appliesTo: { kind: "products", productIds: ["PRD-0201"] },
+  schedule: SCHNITZEL_TUESDAY.schedule,
+  priority: 10,
+});
+
 export const STAFF = promo({
   promotionId: "PRM-24",
   name: "Staff Discount",
@@ -115,4 +127,5 @@ export const PROPOSED_PROMOTIONS: Promotion[] = [
   SCHNITZEL_TUESDAY,
   STAFF,
   PARMA_AND_PINT,
+  SCHNITZEL_NO_POT,
 ];

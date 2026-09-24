@@ -17,11 +17,13 @@ See `docs/decisions/0001`–`0004`. Product assumptions are listed in `docs/PROD
 ## Tasks
 
 - [ ] Send the customer questions (draft in `../email_reply.md`, outside the repo); add "per item or whole order?" and "mid-shift changes / end minute".
-- [ ] Apply the customer's answers: update `assumptions.ts`, `proposed-rulebook.ts`, `docs/PRODUCT.md`, and the affected specs.
+- [ ] Apply the customer's answers: update `assumptions.ts`, `prisma/seed/data/rulebook.ts`, `docs/PRODUCT.md`, and the affected specs. If the pot is part of the deal, remove `PRM-26` (Schnitzel Tuesday — no pot).
+- [ ] Get a second pass on the engine change: best price now compares final prices including stacked deals, and bundles at or above menu price are never formed (`packages/pricing-engine/src/engine.ts`).
+- [ ] Browser-check use cases 8–12 in `GUIDE.md` (verified through the API and tests only; use case 12 = deal status and per-deal Undo).
+- [ ] `make check` is flaky: `promo-hub:check-types` runs `prisma generate` while `promo-hub:lint` reads the generated client, and Turbo caches the bad lint output. Make lint depend on generation in `turbo.json`, then add `--max-warnings 0` to promo-hub's `lint` script (every other package has it).
 - [ ] README: state that the prototype is advisory. Tills keep Trestle's priority behaviour until the engine runs in the checkout path.
 - [ ] Decide on formatting: run `pnpm format` once (72 files; formatting-only diff), then add `format:check` to `make check`.
 - [ ] Browser-test the promotion editor sheet end to end (only covered through the API so far).
-- [ ] `apps/promo-web/lib/api-client.ts` doesn't read the Zod validation error shape (`{ errors, properties }`), so a 400 from the editor shows as "Bad Request" instead of the field errors.
 - [ ] Check whether Prisma 7's `migrate reset` seeds on its own. If it does, remove the extra `db:seed` from `make dbreset`. Needs the user to run it or consent: Prisma blocks agent-run resets.
 
 ## Blockers

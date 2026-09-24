@@ -11,14 +11,14 @@ export class ApiError extends Error {
   }
 }
 
-// Nest errors come back as { message: string | string[] | object }.
+// Nest errors come back as { message: string | string[] }, plus `errors` or
+// `issues` detail. Never show an empty message: fall back to the status text.
 function errorMessage(body: unknown, fallback: string): string {
   if (!body || typeof body !== "object") return fallback;
-  const message = (body as { message?: unknown }).message;
-  if (typeof message === "string") return message;
-  if (Array.isArray(message)) return message.join(", ");
-  const errors = (body as { errors?: unknown }).errors;
-  if (Array.isArray(errors)) return errors.join(", ");
+  const { message, errors } = body as { message?: unknown; errors?: unknown };
+  if (typeof message === "string" && message.trim()) return message;
+  if (Array.isArray(message) && message.length > 0) return message.join(", ");
+  if (Array.isArray(errors) && errors.length > 0) return errors.join(", ");
   return fallback;
 }
 

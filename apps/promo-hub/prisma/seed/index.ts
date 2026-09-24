@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { PrismaClient } from "../src/database/generated/prisma/client";
-import { createPrismaAdapter } from "../src/database/prisma-adapter";
-import { seedRulebooks } from "../src/rulebooks/seed/seed-rulebooks";
+import { PrismaClient } from "../../src/database/generated/prisma/client";
+import { createPrismaAdapter } from "../../src/database/prisma-adapter";
+import { seedRulebooks } from "./seeders/rulebook";
 
 async function main() {
   const url = process.env.DATABASE_URL;

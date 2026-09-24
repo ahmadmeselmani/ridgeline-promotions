@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { z } from "zod";
 import type {
   CreatePromotionInput,
   Promotion,
@@ -8,6 +7,7 @@ import type {
 } from "@ridgeline/contracts/promotions";
 import type { RulebookName } from "@ridgeline/contracts/rulebooks";
 import { PromotionSchema, STACKS_WITH_ANY } from "@ridgeline/contracts/promotions";
+import { zodBadRequest } from "@ridgeline/nest-common";
 import { ProductsService } from "../products/products.service";
 import { RulebooksService } from "../rulebooks/rulebooks.service";
 import { VenuesService } from "../venues/venues.service";
@@ -46,7 +46,7 @@ export class PromotionsService {
     const existing = await this.findOne("draft", promotionId);
     const parsed = PromotionSchema.safeParse({ ...existing, ...input, promotionId });
     if (!parsed.success) {
-      throw new BadRequestException(z.treeifyError(parsed.error));
+      throw zodBadRequest(parsed.error);
     }
     const promotion = parsed.data;
     const draft = (await this.findAll("draft")).map((candidate) =>
@@ -68,6 +68,25 @@ export class PromotionsService {
           stacksWith: promotion.stacksWith.filter((id) => id !== promotionId),
         })),
     );
+  }
+
+  // Undo for one deal: puts it back in the draft exactly as the tills run it.
+  // Brings back a removed deal, or drops unpublished edits to a changed one.
+  async restore(promotionId: string): Promise<PromotionResponse> {
+    const live = await this.findOne("live", promotionId);
+    const draft = await this.findAll("draft");
+    const ids = new Set(draft.map((promotion) => promotion.promotionId));
+    // A deal it stacked on may since have been removed from the draft.
+    const restored: Promotion = {
+      ...live,
+      stacksWith: live.stacksWith.filter((id) => id === STACKS_WITH_ANY || ids.has(id)),
+    };
+    await this.rulebooksService.updateDraftPromotions((promotions) =>
+      ids.has(promotionId)
+        ? promotions.map((promotion) => (promotion.promotionId === promotionId ? restored : promotion))
+        : [...promotions, restored],
+    );
+    return restored;
   }
 
   // Ids are unique across live and draft so a deleted-then-recreated draft

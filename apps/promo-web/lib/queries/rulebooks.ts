@@ -5,6 +5,7 @@ import type {
   UpdatePromotionInput,
 } from "@ridgeline/contracts/promotions";
 import type {
+  DraftStatusResponse,
   PricingPolicy,
   RulebookName,
   RulebookResponse,
@@ -19,6 +20,7 @@ function useInvalidateRules() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["rulebooks"] }),
       queryClient.invalidateQueries({ queryKey: ["rulebook"] }),
+      queryClient.invalidateQueries({ queryKey: ["draft-status"] }),
       queryClient.invalidateQueries({ queryKey: ["quote"] }),
       queryClient.invalidateQueries({ queryKey: ["impact"] }),
       queryClient.invalidateQueries({ queryKey: ["clash-grid"] }),
@@ -36,6 +38,14 @@ export function useRulebook(name: RulebookName) {
   return useQuery({
     queryKey: ["rulebook", name],
     queryFn: () => apiFetch<RulebookResponse>(`/rulebooks/${name}`),
+  });
+}
+
+// Which deals the tills already run and which are waiting to be published.
+export function useDraftStatus() {
+  return useQuery({
+    queryKey: ["draft-status"],
+    queryFn: () => apiFetch<DraftStatusResponse>("/rulebooks/draft/status"),
   });
 }
 
@@ -86,6 +96,16 @@ export function useDeletePromotion() {
   const invalidate = useInvalidateRules();
   return useMutation({
     mutationFn: (promotionId: string) => apiDelete(`/promotions/${promotionId}`),
+    onSuccess: invalidate,
+  });
+}
+
+// Undo for one deal: back to exactly what the tills run.
+export function useRestorePromotion() {
+  const invalidate = useInvalidateRules();
+  return useMutation({
+    mutationFn: (promotionId: string) =>
+      apiPost<PromotionResponse>(`/promotions/${promotionId}/restore`),
     onSuccess: invalidate,
   });
 }

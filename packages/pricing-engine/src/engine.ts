@@ -52,7 +52,11 @@ interface Unit {
 
 interface Candidate {
   promotion: Promotion;
+  // After this deal alone.
   priceCents: number;
+  // After any deals a rule allows on top of it. Best price compares these, so
+  // a smaller deal that allows an extra can beat a bigger one that doesn't.
+  finalCents: number;
 }
 
 /**
@@ -74,9 +78,11 @@ export function priceBasket(input: PriceBasketInput): PriceBasketResult {
     .filter((promotion) => promotion.type === "bundle_price")
     .sort(byPriorityThenId);
 
-  applyBundles(units, bundles, singles, input.policy);
-  applySingles(units, singles, input.policy);
-  applyStacking(units, singles);
+  const stackers = stackersOf(singles);
+
+  applyBundles(units, bundles, singles, stackers, input.policy);
+  applySingles(units, singles, stackers, input.policy);
+  applyStacking(units, stackers);
   explainNotNow(units, notNow);
 
   const lines = groupIntoLines(units);
@@ -167,23 +173,29 @@ function rankCandidates(
     if (policy.resolution === "priority") {
       return (
         b.promotion.priority - a.promotion.priority ||
-        a.priceCents - b.priceCents ||
+        a.finalCents - b.finalCents ||
         a.promotion.promotionId.localeCompare(b.promotion.promotionId)
       );
     }
     return (
-      a.priceCents - b.priceCents ||
+      a.finalCents - b.finalCents ||
       b.promotion.priority - a.promotion.priority ||
       a.promotion.promotionId.localeCompare(b.promotion.promotionId)
     );
   });
 }
 
-function candidatesFor(unit: Unit, singles: readonly Promotion[]): Candidate[] {
+function candidatesFor(
+  unit: Unit,
+  singles: readonly Promotion[],
+  stackers: readonly Promotion[],
+): Candidate[] {
   const candidates: Candidate[] = [];
   for (const promotion of singles) {
     const priceCents = singlePrice(promotion, unit);
-    if (priceCents !== null) candidates.push({ promotion, priceCents });
+    if (priceCents === null) continue;
+    const { finalCents } = stackOnto(priceCents, promotion, unit.product, stackers);
+    candidates.push({ promotion, priceCents, finalCents });
   }
   return candidates;
 }
@@ -192,6 +204,7 @@ function applyBundles(
   units: Unit[],
   bundles: readonly Promotion[],
   singles: readonly Promotion[],
+  stackers: readonly Promotion[],
   policy: PricingPolicy,
 ): void {
   for (const bundle of bundles) {
@@ -205,16 +218,30 @@ function applyBundles(
       if (!chosen) break;
 
       const bests = chosen.map(
-        (unit) => rankCandidates(candidatesFor(unit, singles), policy)[0],
+        (unit) =>
+          rankCandidates(candidatesFor(unit, singles, stackers), policy)[0],
       );
       const alternativeCents = sum(
-        chosen.map((unit, i) => bests[i]?.priceCents ?? unit.listCents),
+        chosen.map((unit, i) => bests[i]?.finalCents ?? unit.listCents),
       );
+      const listCents = sum(chosen.map((unit) => unit.listCents));
+      const allocation = allocate(
+        bundle.value,
+        chosen.map((unit) => unit.listCents),
+      );
+      const stacked = chosen.map((unit, i) =>
+        stackOnto(allocation[i] ?? unit.listCents, bundle, unit.product, stackers),
+      );
+      const bundleCents = sum(stacked.map((result) => result.finalCents));
 
       let decline: string | null = null;
-      if (policy.resolution === "best_price") {
-        if (bundle.value >= alternativeCents) {
-          decline = `Cheaper without the bundle: ${formatCents(alternativeCents)} vs ${formatCents(bundle.value)}`;
+      // Like a fixed price, a bundle that costs more than its items is never
+      // charged, whatever the policy.
+      if (bundle.value >= listCents) {
+        decline = `Bundle price isn't below the menu price (${formatCents(bundle.value)} vs ${formatCents(listCents)})`;
+      } else if (policy.resolution === "best_price") {
+        if (bundleCents >= alternativeCents) {
+          decline = `Cheaper without the bundle: ${formatCents(alternativeCents)} vs ${formatCents(bundleCents)}`;
         }
       } else {
         const rival = bests
@@ -232,10 +259,6 @@ function applyBundles(
 
       formed += 1;
       const group = `${bundle.promotionId}#${formed}`;
-      const allocation = allocate(
-        bundle.value,
-        chosen.map((unit) => unit.listCents),
-      );
       chosen.forEach((unit, i) => {
         const priceCents = allocation[i] ?? unit.listCents;
         unit.primary = bundle;
@@ -249,9 +272,9 @@ function applyBundles(
         });
         const why =
           policy.resolution === "best_price"
-            ? `Part of ${bundle.name} — cheaper as a bundle (${formatCents(bundle.value)} vs ${formatCents(alternativeCents)})`
+            ? `Part of ${bundle.name} — cheaper as a bundle (${formatCents(bundleCents)} vs ${formatCents(alternativeCents)})`
             : `${bundle.name} has higher priority`;
-        for (const candidate of candidatesFor(unit, singles)) {
+        for (const candidate of candidatesFor(unit, singles, stackers)) {
           skip(unit, candidate.promotion, why);
         }
       });
@@ -313,11 +336,15 @@ function allocate(totalCents: number, weights: readonly number[]): number[] {
 function applySingles(
   units: Unit[],
   singles: readonly Promotion[],
+  stackers: readonly Promotion[],
   policy: PricingPolicy,
 ): void {
   for (const unit of units) {
     if (unit.primary !== null) continue;
-    const ranked = rankCandidates(candidatesFor(unit, singles), policy);
+    const ranked = rankCandidates(
+      candidatesFor(unit, singles, stackers),
+      policy,
+    );
     const winner = ranked[0];
     if (!winner) continue;
 
@@ -344,40 +371,65 @@ function loserReason(
   if (policy.resolution === "priority") {
     return `Lower priority than ${winner.promotion.name}`;
   }
-  if (loser.priceCents === winner.priceCents) {
+  if (loser.finalCents === winner.finalCents) {
     return `Same price as ${winner.promotion.name} — one deal per item`;
   }
-  return `One deal per item — ${winner.promotion.name} is cheaper (${formatCents(winner.priceCents)} vs ${formatCents(loser.priceCents)})`;
+  return `One deal per item — ${winner.promotion.name} is cheaper (${formatCents(winner.finalCents)} vs ${formatCents(loser.finalCents)})`;
 }
 
-function applyStacking(units: Unit[], singles: readonly Promotion[]): void {
-  const stackers = singles
+// Deals that may go on top of another one, in the order they're applied.
+function stackersOf(singles: readonly Promotion[]): Promotion[] {
+  return singles
     .filter(
       (promotion) =>
         promotion.type === "percent_off" && promotion.stacksWith.length > 0,
     )
     .sort(byPriorityThenId);
+}
 
+// Adds every deal a rule allows on top of `primary`. Used both to choose the
+// best deal and to apply it, so the price compared is the price charged.
+function stackOnto(
+  priceCents: number,
+  primary: Promotion,
+  product: CatalogProduct,
+  stackers: readonly Promotion[],
+): { finalCents: number; applied: AppliedPromotion[] } {
+  let finalCents = priceCents;
+  const applied: AppliedPromotion[] = [];
+  for (const stacker of stackers) {
+    if (stacker.promotionId === primary.promotionId) continue;
+    if (!productInScope(stacker.appliesTo, product)) continue;
+    const allowed =
+      stacker.stacksWith.includes(STACKS_WITH_ANY) ||
+      stacker.stacksWith.includes(primary.promotionId);
+    if (!allowed) continue;
+
+    const discountCents = percentOf(finalCents, stacker.value);
+    finalCents -= discountCents;
+    applied.push({
+      promotionId: stacker.promotionId,
+      name: stacker.name,
+      role: "stacked",
+      discountCents,
+    });
+  }
+  return { finalCents, applied };
+}
+
+function applyStacking(units: Unit[], stackers: readonly Promotion[]): void {
   for (const unit of units) {
-    const primary = unit.primary;
-    if (!primary) continue;
-    for (const stacker of stackers) {
-      if (stacker.promotionId === primary.promotionId) continue;
-      if (!productInScope(stacker.appliesTo, unit.product)) continue;
-      const allowed =
-        stacker.stacksWith.includes(STACKS_WITH_ANY) ||
-        stacker.stacksWith.includes(primary.promotionId);
-      if (!allowed) continue;
-
-      const discountCents = percentOf(unit.priceCents, stacker.value);
-      unit.priceCents -= discountCents;
-      unit.applied.push({
-        promotionId: stacker.promotionId,
-        name: stacker.name,
-        role: "stacked",
-        discountCents,
-      });
-      unit.skipped.delete(stacker.promotionId);
+    if (!unit.primary) continue;
+    const { finalCents, applied } = stackOnto(
+      unit.priceCents,
+      unit.primary,
+      unit.product,
+      stackers,
+    );
+    unit.priceCents = finalCents;
+    for (const extra of applied) {
+      unit.applied.push(extra);
+      unit.skipped.delete(extra.promotionId);
     }
   }
 }

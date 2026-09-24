@@ -23,7 +23,7 @@ The root cause, found in the fixtures: Trestle resolves clashes by `priority`, a
 | ---------------- | ------------ | ------------------------------------------------------------------------------------------- |
 | Start here       | `/`          | Problem statement, 4-step walkthrough, today's till vs new rules for the brief's situations |
 | Price an order   | `/simulator` | Quote any basket at any venue and time; one receipt per rulebook, with reasons              |
-| Manage deals     | `/rulebook`  | Edit the draft → see affected situations → publish or undo                                  |
+| Manage deals     | `/rulebook`  | Edit your draft → see affected situations → publish or undo. Each deal shows its status against the tills (published, changed, new, turned off, removed) and can be undone on its own |
 | Week at a glance | `/clashes`   | 7-day × 30-minute grid per venue: overlaps and double discounts                             |
 | Manual prices    | `/overrides` | Record a manual price (permission + reason), reported apart from promotions                 |
 
@@ -52,10 +52,10 @@ Payments, settlements, voids, webhooks, real till integration, authentication, a
 
 ## Assumed until the customer confirms
 
-These are flagged in the data and on the Start here page. They're defined in `apps/promo-hub/src/trestle/assumptions.ts` and `apps/promo-hub/src/rulebooks/seed/proposed-rulebook.ts`.
+These are flagged in the data and on the Start here page. They're defined in `apps/promo-hub/src/trestle/assumptions.ts` and `apps/promo-hub/prisma/seed/data/rulebook.ts`.
 
 1. The bistros are The Gilded Spoon (`VEN-0907`) and Fitzroy Larder (`VEN-1207`).
-2. Schnitzel Tuesday includes a pot. Pot products `PRD-0109` and `PRD-0110` are invented.
+2. Schnitzel Tuesday includes a pot. Pot products `PRD-0109` and `PRD-0110` are invented. A schnitzel without a pot keeps today's $18 through *Schnitzel Tuesday — no pot* (`PRM-26`) until Tania answers.
 3. Parma & Pint accepts lager only.
 4. The member discount does **not** stack. Ray's order goes from $16.20 to $18.00, and a member's happy-hour beer goes _up_ from $9.18 to $10.20.
 5. Timezone is derived from the venue's state. Trestle returns `null`.
